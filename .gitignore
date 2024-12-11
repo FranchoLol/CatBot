@@ -1,0 +1,35 @@
+# Dependencias
+node_modules/
+
+# Archivos de entorno
+.env
+# Archivos de texto con datos sensibles
+Cosas.txt
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Directorios de caché
+.npm
+.eslintcache
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Directorios de compilación
+/dist
+/build
+
+# Archivos de configuración local
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Directorios de datos
+data/

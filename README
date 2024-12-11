@@ -1,0 +1,20 @@
+# Discord Bot
+
+Este es un bot de Discord multifuncional diseñado para mejorar la experiencia de los usuarios en los servidores de Discord.
+
+## Características
+
+- **Comandos de Moderación**: Kick, ban, clear, creación y gestión de roles y canales.
+- **Comandos de Información**: Información detallada sobre usuarios, servidores, roles y el propio bot.
+- **Comandos de Utilidad**: Avatar, calculadora, búsqueda en Google, y más.
+- **Sistema de Niveles**: Sistema completo de niveles con configuración personalizable.
+- **Multilenguaje**: Soporte para español, inglés y portugués.
+- **Prefijo Personalizable**: Cada servidor puede tener su propio prefijo.
+- **Comandos de Barra**: Soporte para comandos de barra (slash commands).
+
+## Instalación
+
+1. Clona este repositorio
+2. Instala las dependencias con `npm install`
+3. Crea un archivo `.env` en la raíz del proyecto y añade tu token de bot de Discord:
+
