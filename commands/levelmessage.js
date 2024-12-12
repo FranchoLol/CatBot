@@ -31,8 +31,8 @@ module.exports = {
     }
 
     // Procesar GIFs en el texto
-    text = text.replace(/\[gif:([^\]]+)\]/g, (match, url) => {
-      return `[gif:${encodeURIComponent(url)}]`;
+    text = text.replace(/\[gif:([^\]]+)\]/g, (match, id) => {
+      return `[gif:${id}]`;
     });
 
     const config = getLevelChannelConfig(message.guild.id);
@@ -45,7 +45,7 @@ module.exports = {
 
     setLevelChannelConfig(message.guild.id, config.channelId, config.message);
 
-    message.reply('Mensaje de nivel configurado correctamente. Puedes usar [gif:URL] para incluir GIFs en el mensaje.');
+    message.reply('Mensaje de nivel configurado correctamente. Puedes usar [gif:ID] para incluir GIFs en el mensaje.');
   },
   data: new SlashCommandBuilder()
     .setName('levelmessage')
@@ -85,8 +85,8 @@ module.exports = {
     }
 
     // Procesar GIFs en el texto
-    text = text.replace(/\[gif:([^\]]+)\]/g, (match, url) => {
-      return `[gif:${encodeURIComponent(url)}]`;
+    text = text.replace(/\[gif:([^\]]+)\]/g, (match, id) => {
+      return `[gif:${id}]`;
     });
 
     const config = getLevelChannelConfig(interaction.guild.id);
@@ -99,7 +99,7 @@ module.exports = {
 
     setLevelChannelConfig(interaction.guild.id, config.channelId, config.message);
 
-    interaction.reply('Mensaje de nivel configurado correctamente. Puedes usar [gif:URL] para incluir GIFs en el mensaje.');
+    interaction.reply('Mensaje de nivel configurado correctamente. Puedes usar [gif:ID] para incluir GIFs en el mensaje.');
   },
 };
 

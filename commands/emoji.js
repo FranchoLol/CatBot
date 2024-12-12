@@ -30,14 +30,13 @@ async function sendEmojiList(context, emojis, title) {
   } else {
     const chunks = emojiList.match(/.{1,2048}/g);
     for (let i = 0; i < chunks.length; i++) {
+      const newEmbed = new EmbedBuilder()
+        .setColor('#0099ff')
+        .setDescription(chunks[i]);
       if (i === 0) {
-        embed.setDescription(chunks[i]);
-        await context.reply({ embeds: [embed] });
+        await context.reply({ embeds: [newEmbed] });
       } else {
-        const newEmbed = new EmbedBuilder()
-          .setColor('#0099ff')
-          .setDescription(chunks[i]);
-        await context.followUp({ embeds: [newEmbed] });
+        await context.channel.send({ embeds: [newEmbed] });
       }
     }
   }

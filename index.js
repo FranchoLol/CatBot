@@ -141,8 +141,9 @@ client.on('messageCreate', async message => {
         });
 
         // Procesar GIFs en el mensaje
-        customMessage = customMessage.replace(/\[gif:([^\]]+)\]/g, (match, url) => {
-          return `[GIF](${decodeURIComponent(url)})`;
+        customMessage = customMessage.replace(/\[gif:(\d+)\]/g, (match, id) => {
+          const gif = message.guild.emojis.cache.get(id);
+          return gif ? `<a:${gif.name}:${id}>` : match;
         });
 
         if (config.message.showDateTime) {
