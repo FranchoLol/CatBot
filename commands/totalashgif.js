@@ -23,37 +23,28 @@ module.exports = {
 };
 
 async function sendTotalGifList(client, context) {
-  const allGifs = [];
+  const embeds = [];
   client.guilds.cache.forEach(guild => {
     const guildGifs = guild.emojis.cache.filter(emoji => emoji.animated);
     if (guildGifs.size > 0) {
-      allGifs.push(`**${guild.name}**`);
-      guildGifs.forEach(gif => {
-        allGifs.push(`${gif} **|** \`<a:${gif.name}:${gif.id}>\``);
-      });
-      allGifs.push(''); // Add an empty line between servers
+      const gifList = guildGifs.map(gif => `${gif}`).join(' ');
+      const embed = new EmbedBuilder()
+        .setColor('#0099ff')
+        .setTitle(`Gif - ${guild.name}`)
+        .setDescription(gifList);
+      embeds.push(embed);
     }
   });
 
-  const gifList = allGifs.join('\n');
-  const embed = new EmbedBuilder()
-    .setColor('#0099ff')
-    .setTitle('Todos los GIFs en todos los servidores');
+  if (embeds.length === 0) {
+    return context.reply('No se encontraron GIFs en ningún servidor.');
+  }
 
-  if (gifList.length <= 2048) {
-    embed.setDescription(gifList);
-    await context.reply({ embeds: [embed] });
-  } else {
-    const chunks = gifList.match(/.{1,2048}/g);
-    for (let i = 0; i < chunks.length; i++) {
-      const newEmbed = new EmbedBuilder()
-        .setColor('#0099ff')
-        .setDescription(chunks[i]);
-      if (i === 0) {
-        await context.reply({ embeds: [newEmbed] });
-      } else {
-        await context.channel.send({ embeds: [newEmbed] });
-      }
+  for (let i = 0; i < embeds.length; i++) {
+    if (i === 0) {
+      await context.reply({ embeds: [embeds[i]] });
+    } else {
+      await context.channel.send({ embeds: [embeds[i]] });
     }
   }
 }

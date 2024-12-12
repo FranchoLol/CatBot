@@ -19,26 +19,12 @@ module.exports = {
 };
 
 async function sendEmojiList(context, emojis, title) {
-  const emojiList = emojis.map(emoji => `${emoji} **|** \`<:${emoji.name}:${emoji.id}>\``).join('\n');
+  const emojiList = emojis.map(emoji => `${emoji}`).join(' ');
   const embed = new EmbedBuilder()
     .setColor('#0099ff')
-    .setTitle(title);
+    .setTitle(title)
+    .setDescription(emojiList);
 
-  if (emojiList.length <= 2048) {
-    embed.setDescription(emojiList);
-    await context.reply({ embeds: [embed] });
-  } else {
-    const chunks = emojiList.match(/.{1,2048}/g);
-    for (let i = 0; i < chunks.length; i++) {
-      const newEmbed = new EmbedBuilder()
-        .setColor('#0099ff')
-        .setDescription(chunks[i]);
-      if (i === 0) {
-        await context.reply({ embeds: [newEmbed] });
-      } else {
-        await context.channel.send({ embeds: [newEmbed] });
-      }
-    }
-  }
+  await context.reply({ embeds: [embed] });
 }
 

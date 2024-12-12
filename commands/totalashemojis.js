@@ -23,37 +23,28 @@ module.exports = {
 };
 
 async function sendTotalEmojiList(client, context) {
-  const allEmojis = [];
+  const embeds = [];
   client.guilds.cache.forEach(guild => {
     const guildEmojis = guild.emojis.cache.filter(emoji => !emoji.animated);
     if (guildEmojis.size > 0) {
-      allEmojis.push(`**${guild.name}**`);
-      guildEmojis.forEach(emoji => {
-        allEmojis.push(`${emoji} **|** \`<:${emoji.name}:${emoji.id}>\``);
-      });
-      allEmojis.push(''); // Add an empty line between servers
+      const emojiList = guildEmojis.map(emoji => `${emoji}`).join(' ');
+      const embed = new EmbedBuilder()
+        .setColor('#0099ff')
+        .setTitle(`Emojis - ${guild.name}`)
+        .setDescription(emojiList);
+      embeds.push(embed);
     }
   });
 
-  const emojiList = allEmojis.join('\n');
-  const embed = new EmbedBuilder()
-    .setColor('#0099ff')
-    .setTitle('Todos los emojis en todos los servidores');
+  if (embeds.length === 0) {
+    return context.reply('No se encontraron emojis en ningún servidor.');
+  }
 
-  if (emojiList.length <= 2048) {
-    embed.setDescription(emojiList);
-    await context.reply({ embeds: [embed] });
-  } else {
-    const chunks = emojiList.match(/.{1,2048}/g);
-    for (let i = 0; i < chunks.length; i++) {
-      const newEmbed = new EmbedBuilder()
-        .setColor('#0099ff')
-        .setDescription(chunks[i]);
-      if (i === 0) {
-        await context.reply({ embeds: [newEmbed] });
-      } else {
-        await context.channel.send({ embeds: [newEmbed] });
-      }
+  for (let i = 0; i < embeds.length; i++) {
+    if (i === 0) {
+      await context.reply({ embeds: [embeds[i]] });
+    } else {
+      await context.channel.send({ embeds: [embeds[i]] });
     }
   }
 }
