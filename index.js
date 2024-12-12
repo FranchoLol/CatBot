@@ -140,6 +140,11 @@ client.on('messageCreate', async message => {
           return emoji ? (emoji.animated ? `<a:${emoji.name}:${id}>` : `<:${emoji.name}:${id}>`) : match;
         });
 
+        // Procesar GIFs en el mensaje
+        customMessage = customMessage.replace(/\[gif:([^\]]+)\]/g, (match, url) => {
+          return `[GIF](${decodeURIComponent(url)})`;
+        });
+
         if (config.message.showDateTime) {
           const now = new Date();
           customMessage += `\n(${now.toLocaleString()})`;

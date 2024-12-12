@@ -16,7 +16,7 @@ module.exports = {
     }
 
     const [type, color, showDateTime, ...textParts] = args;
-    const text = textParts.join(' ');
+    let text = textParts.join(' ');
 
     if (type !== 'say' && type !== 'embed') {
       return message.reply('El tipo debe ser "say" o "embed".');
@@ -30,6 +30,11 @@ module.exports = {
       return message.reply('La opción de fecha y hora debe ser "true" o "false".');
     }
 
+    // Procesar GIFs en el texto
+    text = text.replace(/\[gif:([^\]]+)\]/g, (match, url) => {
+      return `[gif:${encodeURIComponent(url)}]`;
+    });
+
     const config = getLevelChannelConfig(message.guild.id);
     config.message = {
       type,
@@ -40,7 +45,7 @@ module.exports = {
 
     setLevelChannelConfig(message.guild.id, config.channelId, config.message);
 
-    message.reply('Mensaje de nivel configurado correctamente.');
+    message.reply('Mensaje de nivel configurado correctamente. Puedes usar [gif:URL] para incluir GIFs en el mensaje.');
   },
   data: new SlashCommandBuilder()
     .setName('levelmessage')
@@ -73,11 +78,16 @@ module.exports = {
     const type = interaction.options.getString('tipo');
     const color = interaction.options.getString('color');
     const showDateTime = interaction.options.getBoolean('fecha_hora');
-    const text = interaction.options.getString('texto');
+    let text = interaction.options.getString('texto');
 
     if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
       return interaction.reply({ content: 'El color debe ser un código hexadecimal válido (por ejemplo, #FF0000).', ephemeral: true });
     }
+
+    // Procesar GIFs en el texto
+    text = text.replace(/\[gif:([^\]]+)\]/g, (match, url) => {
+      return `[gif:${encodeURIComponent(url)}]`;
+    });
 
     const config = getLevelChannelConfig(interaction.guild.id);
     config.message = {
@@ -89,7 +99,7 @@ module.exports = {
 
     setLevelChannelConfig(interaction.guild.id, config.channelId, config.message);
 
-    interaction.reply('Mensaje de nivel configurado correctamente.');
+    interaction.reply('Mensaje de nivel configurado correctamente. Puedes usar [gif:URL] para incluir GIFs en el mensaje.');
   },
 };
 
