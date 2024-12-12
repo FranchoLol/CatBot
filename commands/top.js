@@ -37,7 +37,7 @@ async function createTopEmbed(guild, topUsers, lang) {
     const user = await guild.members.fetch(topUsers[i].userId);
     embed.addFields({
       name: `${i + 1}. ${user.user.username}`,
-      value: getResponse(lang, 'userInfo', topUsers[i].level, topUsers[i].xp)
+      value: getResponse(lang, 'userInfo', topUsers[i].level, topUsers[i].xp, user.id)
     });
   }
 
@@ -48,15 +48,15 @@ function getResponse(lang, key, ...args) {
   const responses = {
     es: {
       topTitle: 'Top usuarios de %s',
-      userInfo: 'Nivel %s - %s XP'
+      userInfo: 'Nivel %s - %s XP <@%s>'
     },
     en: {
       topTitle: 'Top users of %s',
-      userInfo: 'Level %s - %s XP'
+      userInfo: 'Level %s - %s XP <@%s>'
     },
     pt: {
       topTitle: 'Top usuários de %s',
-      userInfo: 'Nível %s - %s XP'
+      userInfo: 'Nível %s - %s XP <@%s>'
     }
   };
 

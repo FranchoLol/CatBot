@@ -8,58 +8,40 @@ module.exports = {
   usage: 'c!xp',
   run: async (client, message, args, lang) => {
     const { guildId, author } = message;
-
-    if (canUseXpCommand(guildId, author.id)) {
-      const result = useXpCommand(guildId, author.id);
-      const embed = new EmbedBuilder()
-        .setColor('#0099ff')
-        .setTitle(getResponse(lang, 'xpCommandTitle'))
-        .setDescription(getResponse(lang, 'xpCommandSuccess', result.xpAdded, result.newXp, result.newLevel))
-        .setFooter({ text: getResponse(lang, 'xpCommandFooter') });
-
-      await message.reply({ embeds: [embed] });
-    } else {
-      const remainingTime = getRemainingCooldown(guildId, author.id);
-      const { hours, minutes, seconds } = formatTime(remainingTime);
-      
-      const embed = new EmbedBuilder()
-        .setColor('#ff0000')
-        .setTitle(getResponse(lang, 'xpCommandTitle'))
-        .setDescription(getResponse(lang, 'xpCommandCooldown', hours, minutes, seconds))
-        .setFooter({ text: getResponse(lang, 'xpCommandFooter') });
-
-      await message.reply({ embeds: [embed] });
-    }
+    await handleXpCommand(message, guildId, author, lang);
   },
   data: new SlashCommandBuilder()
     .setName('xp')
     .setDescription('Obtén XP diaria'),
   async execute(interaction, lang) {
     const { guildId, user } = interaction;
-
-    if (canUseXpCommand(guildId, user.id)) {
-      const result = useXpCommand(guildId, user.id);
-      const embed = new EmbedBuilder()
-        .setColor('#0099ff')
-        .setTitle(getResponse(lang, 'xpCommandTitle'))
-        .setDescription(getResponse(lang, 'xpCommandSuccess', result.xpAdded, result.newXp, result.newLevel))
-        .setFooter({ text: getResponse(lang, 'xpCommandFooter') });
-
-      await interaction.reply({ embeds: [embed] });
-    } else {
-      const remainingTime = getRemainingCooldown(guildId, user.id);
-      const { hours, minutes, seconds } = formatTime(remainingTime);
-      
-      const embed = new EmbedBuilder()
-        .setColor('#ff0000')
-        .setTitle(getResponse(lang, 'xpCommandTitle'))
-        .setDescription(getResponse(lang, 'xpCommandCooldown', hours, minutes, seconds))
-        .setFooter({ text: getResponse(lang, 'xpCommandFooter') });
-
-      await interaction.reply({ embeds: [embed] });
-    }
+    await handleXpCommand(interaction, guildId, user, lang);
   },
 };
+
+async function handleXpCommand(context, guildId, user, lang) {
+  if (canUseXpCommand(guildId, user.id)) {
+    const result = useXpCommand(guildId, user.id);
+    const embed = new EmbedBuilder()
+      .setColor('#0099ff')
+      .setTitle(getResponse(lang, 'xpCommandTitle'))
+      .setDescription(getResponse(lang, 'xpCommandSuccess', result.xpAdded, result.newXp, result.newLevel))
+      .setFooter({ text: getResponse(lang, 'xpCommandFooter') });
+
+    await context.reply({ embeds: [embed] });
+  } else {
+    const remainingTime = getRemainingCooldown(guildId, user.id);
+    const { hours, minutes, seconds } = formatTime(remainingTime);
+    
+    const embed = new EmbedBuilder()
+      .setColor('#ff0000')
+      .setTitle(getResponse(lang, 'xpCommandTitle'))
+      .setDescription(getResponse(lang, 'xpCommandCooldown', hours, minutes, seconds))
+      .setFooter({ text: getResponse(lang, 'xpCommandFooter') });
+
+    await context.reply({ embeds: [embed] });
+  }
+}
 
 function formatTime(ms) {
   const seconds = Math.floor((ms / 1000) % 60);

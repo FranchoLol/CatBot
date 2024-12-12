@@ -20,14 +20,7 @@ module.exports = {
     const type = args[2]?.toLowerCase() || 'xp';
     if (type !== 'xp' && type !== 'lvl') return message.reply(getResponse(lang, 'invalidType'));
 
-    let newExp;
-    if (type === 'lvl') {
-      const currentExp = getUserExperience(message.guild.id, user.id);
-      const newLevel = Math.max(0, currentExp.level - amount);
-      newExp = setLevel(message.guild.id, user.id, newLevel);
-    } else {
-      newExp = removeExperience(message.guild.id, user.id, amount);
-    }
+    const newExp = removeLevelsOrXp(message.guild.id, user.id, amount, type);
 
     message.reply(getResponse(lang, 'expRemoved', user.username, amount, type, newExp.level, newExp.xp));
   },
@@ -59,21 +52,37 @@ module.exports = {
     const amount = interaction.options.getInteger('cantidad');
     const type = interaction.options.getString('tipo') || 'xp';
 
-    let xpToRemove;
-    if (type === 'lvl') {
-      xpToRemove = 0;
-      for (let i = 0; i < amount; i++) {
-        xpToRemove += getXpForNextLevel(i);
-      }
-    } else {
-      xpToRemove = amount;
-    }
-
-    const newExp = removeExperience(interaction.guild.id, user.id, xpToRemove);
+    const newExp = removeLevelsOrXp(interaction.guild.id, user.id, amount, type);
 
     interaction.reply(getResponse(lang, 'expRemoved', user.username, amount, type, newExp.level, newExp.xp));
   },
 };
+
+function removeLevelsOrXp(guildId, userId, amount, type) {
+  const currentExp = getUserExperience(guildId, userId);
+  let newXp, newLevel;
+
+  if (type === 'lvl') {
+    newLevel = Math.max(0, currentExp.level - amount);
+    newXp = currentExp.xp;
+    
+    // Adjust XP if it exceeds the new level's requirement
+    const xpForNewLevel = getXpForNextLevel(newLevel);
+    if (newXp >= xpForNewLevel) {
+      newXp = xpForNewLevel - 1;
+    }
+  } else {
+    newXp = Math.max(0, currentExp.xp - amount);
+    newLevel = currentExp.level;
+    
+    // Adjust level if XP is not enough for the current level
+    while (newLevel > 0 && newXp < getXpForNextLevel(newLevel - 1)) {
+      newLevel--;
+    }
+  }
+
+  return setLevel(guildId, userId, newLevel, newXp);
+}
 
 function getResponse(lang, key, ...args) {
   const responses = {

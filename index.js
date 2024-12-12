@@ -115,6 +115,25 @@ client.on('interactionCreate', async interaction => {
 client.on('messageCreate', async message => {
   if (!message.guild || message.author.bot) return;
 
+  const { addMessageExperience, getLevelChannelConfig } = require('./utils/experienceUtils');
+  // Add XP for sending a message
+  const result = addMessageExperience(message.guild.id, message.author.id, message.content.length);
+  
+  // Verificar si el usuario subió de nivel
+  if (result.leveledUp) {
+    const config = getLevelChannelConfig(message.guild.id);
+    const channel = config.channelId ? message.guild.channels.cache.get(config.channelId) : message.channel;
+    
+    if (channel) {
+      const defaultMessage = `¡Felicidades <@${message.author.id}>! Has subido al nivel ${result.level}.`;
+      const customMessage = config.message ? config.message
+        .replace('[user]', `<@${message.author.id}>`)
+        .replace('[lvl]', result.level.toString()) : defaultMessage;
+      
+      channel.send(customMessage);
+    }
+  }
+
   const prefix = getPrefix(message.guild.id);
   const language = getLanguage(message.guild.id);
 

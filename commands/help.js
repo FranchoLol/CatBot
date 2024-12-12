@@ -69,6 +69,9 @@ const commands = [
       { name: 'top', description: 'Muestra los usuarios con más nivel en el servidor' },
       { name: 'leveladd', description: 'Añade experiencia o niveles a un usuario', adminOnly: true },
       { name: 'levelremove', description: 'Quita experiencia o niveles a un usuario', adminOnly: true },
+      { name: 'levelchannel', description: 'Configura el canal y mensaje para los anuncios de subida de nivel', adminOnly: true },
+      { name: 'levelchannelremove', description: 'Elimina la configuración de canal para anuncios de subida de nivel', adminOnly: true },
+      { name: 'levelchannelset', description: 'Establece un nuevo canal para los anuncios de subida de nivel', adminOnly: true },
     ]
   },
   {
