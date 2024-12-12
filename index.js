@@ -5,7 +5,8 @@ const {
   Partials, 
   ActivityType, 
   Collection, 
-  PresenceUpdateStatus 
+  PresenceUpdateStatus,
+  EmbedBuilder
 } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
@@ -126,11 +127,35 @@ client.on('messageCreate', async message => {
     
     if (channel) {
       const defaultMessage = `¡Felicidades <@${message.author.id}>! Has subido al nivel ${result.level}.`;
-      const customMessage = config.message ? config.message
-        .replace('[user]', `<@${message.author.id}>`)
-        .replace('[lvl]', result.level.toString()) : defaultMessage;
-      
-      channel.send(customMessage);
+      let customMessage;
+
+      if (config.message) {
+        customMessage = config.message.text
+          .replace('[user]', `<@${message.author.id}>`)
+          .replace('[lvl]', result.level.toString());
+
+        // Detectar y reemplazar IDs de emojis/GIFs
+        customMessage = customMessage.replace(/\[id:(\d+)\]/g, (match, id) => {
+          const emoji = message.guild.emojis.cache.get(id);
+          return emoji ? (emoji.animated ? `<a:${emoji.name}:${id}>` : `<:${emoji.name}:${id}>`) : match;
+        });
+
+        if (config.message.showDateTime) {
+          const now = new Date();
+          customMessage += `\n(${now.toLocaleString()})`;
+        }
+
+        if (config.message.type === 'embed') {
+          const embed = new EmbedBuilder()
+            .setColor(config.message.color)
+            .setDescription(customMessage);
+          channel.send({ embeds: [embed] });
+        } else {
+          channel.send(customMessage);
+        }
+      } else {
+        channel.send(defaultMessage);
+      }
     }
   }
 
@@ -142,8 +167,7 @@ client.on('messageCreate', async message => {
   const args = message.content.slice(prefix.length).trim().split(/ +/);
   const commandName = args.shift().toLowerCase();
 
-  const command = client.commands.get(commandName) || 
-                  client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
+  const command = client.commands.get(commandName) || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
 
   if (!command) {
     return message.reply(getResponse(language, 'commandNotFound', prefix));

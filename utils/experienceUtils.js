@@ -4,6 +4,7 @@ const path = require('path');
 const experiencePath = path.join(__dirname, '..', 'data', 'experience.json');
 const levelConfigPath = path.join(__dirname, '..', 'data', 'levelConfig.json');
 const levelChannelConfigPath = path.join(__dirname, '..', 'data', 'levelChannelConfig.json');
+const levelMessageConfigPath = path.join(__dirname, '..', 'data', 'levelMessageConfig.json');
 
 function getExperience() {
   if (!fs.existsSync(experiencePath)) {
@@ -178,6 +179,31 @@ function removeLevelChannelConfig(guildId) {
   }
 }
 
+function getLevelMessageConfig(guildId) {
+  if (!fs.existsSync(levelMessageConfigPath)) {
+    return {};
+  }
+  const config = JSON.parse(fs.readFileSync(levelMessageConfigPath, 'utf8'));
+  return config[guildId] || {};
+}
+
+function setLevelMessageConfig(guildId, config) {
+  let allConfig = {};
+  if (fs.existsSync(levelMessageConfigPath)) {
+    allConfig = JSON.parse(fs.readFileSync(levelMessageConfigPath, 'utf8'));
+  }
+  allConfig[guildId] = config;
+  fs.writeFileSync(levelMessageConfigPath, JSON.stringify(allConfig, null, 2), 'utf8');
+}
+
+function removeLevelMessageConfig(guildId) {
+  if (fs.existsSync(levelMessageConfigPath)) {
+    const config = JSON.parse(fs.readFileSync(levelMessageConfigPath, 'utf8'));
+    delete config[guildId];
+    fs.writeFileSync(levelMessageConfigPath, JSON.stringify(config, null, 2), 'utf8');
+  }
+}
+
 module.exports = {
   getUserExperience,
   addExperience,
@@ -194,5 +220,8 @@ module.exports = {
   getLevelChannelConfig,
   setLevelChannelConfig,
   removeLevelChannelConfig,
+  getLevelMessageConfig,
+  setLevelMessageConfig,
+  removeLevelMessageConfig,
 };
 

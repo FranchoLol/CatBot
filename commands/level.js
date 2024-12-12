@@ -4,6 +4,7 @@ const { getUserExperience, getXpForNextLevel } = require('../utils/experienceUti
 
 module.exports = {
   name: 'level',
+  aliases: ['rank', 'lvl'],
   description: 'Muestra el nivel y experiencia de un usuario',
   usage: 'k!level [@usuario]',
   run: async (client, message, args, lang) => {
