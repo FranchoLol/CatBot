@@ -27,7 +27,7 @@ async function sendTotalGifList(client, context) {
   client.guilds.cache.forEach(guild => {
     const guildGifs = guild.emojis.cache.filter(emoji => emoji.animated);
     if (guildGifs.size > 0) {
-      const gifList = guildGifs.map(gif => `${gif}`).join(' ');
+      const gifList = guildGifs.map(gif => `${gif} **|** \`<a:${gif.name}:${gif.id}>\``).join('\n');
       const embed = new EmbedBuilder()
         .setColor('#0099ff')
         .setTitle(`Gif - ${guild.name}`)

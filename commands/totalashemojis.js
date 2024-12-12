@@ -27,7 +27,7 @@ async function sendTotalEmojiList(client, context) {
   client.guilds.cache.forEach(guild => {
     const guildEmojis = guild.emojis.cache.filter(emoji => !emoji.animated);
     if (guildEmojis.size > 0) {
-      const emojiList = guildEmojis.map(emoji => `${emoji}`).join(' ');
+      const emojiList = guildEmojis.map(emoji => `${emoji} **|** \`<:${emoji.name}:${emoji.id}>\``).join('\n');
       const embed = new EmbedBuilder()
         .setColor('#0099ff')
         .setTitle(`Emojis - ${guild.name}`)

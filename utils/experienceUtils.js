@@ -4,7 +4,7 @@ const path = require('path');
 const experiencePath = path.join(__dirname, '..', 'data', 'experience.json');
 const levelConfigPath = path.join(__dirname, '..', 'data', 'levelConfig.json');
 const levelChannelConfigPath = path.join(__dirname, '..', 'data', 'levelChannelConfig.json');
-const levelMessageConfigPath = path.join(__dirname, '..', 'data', 'levelMessageConfig.json');
+const limitedChannelsPath = path.join(__dirname, '..', 'data', 'limitedChannels.json');
 
 function getExperience() {
   if (!fs.existsSync(experiencePath)) {
@@ -70,14 +70,17 @@ function getXpForNextLevel(level) {
 function getTopUsers(guildId, limit = 10) {
   const experience = getExperience();
   if (!experience[guildId]) return [];
-  
+
   return Object.entries(experience[guildId])
     .map(([userId, data]) => ({ userId, ...data }))
     .sort((a, b) => b.level - a.level || b.xp - a.xp)
     .slice(0, limit);
 }
 
-function addMessageExperience(guildId, userId, messageLength) {
+function addMessageExperience(guildId, userId, messageLength, channelId) {
+  if (isChannelLimited(guildId, channelId)) {
+    return { leveledUp: false };
+  }
   const config = getLevelConfig();
   const xpToAdd = getMessageXP(messageLength, config.messageLengthXP);
   return addExperience(guildId, userId, xpToAdd);
@@ -179,30 +182,49 @@ function removeLevelChannelConfig(guildId) {
   }
 }
 
-function getLevelMessageConfig(guildId) {
-  if (!fs.existsSync(levelMessageConfigPath)) {
+function getLimitedChannels(guildId) {
+  if (!fs.existsSync(limitedChannelsPath)) {
     return {};
   }
-  const config = JSON.parse(fs.readFileSync(levelMessageConfigPath, 'utf8'));
-  return config[guildId] || {};
+  const limitedChannels = JSON.parse(fs.readFileSync(limitedChannelsPath, 'utf8'));
+  return limitedChannels[guildId] || [];
 }
 
-function setLevelMessageConfig(guildId, config) {
-  let allConfig = {};
-  if (fs.existsSync(levelMessageConfigPath)) {
-    allConfig = JSON.parse(fs.readFileSync(levelMessageConfigPath, 'utf8'));
+function setLimitedChannels(guildId, channels) {
+  let limitedChannels = {};
+  if (fs.existsSync(limitedChannelsPath)) {
+    limitedChannels = JSON.parse(fs.readFileSync(limitedChannelsPath, 'utf8'));
   }
-  allConfig[guildId] = config;
-  fs.writeFileSync(levelMessageConfigPath, JSON.stringify(allConfig, null, 2), 'utf8');
+  limitedChannels[guildId] = channels;
+  fs.writeFileSync(limitedChannelsPath, JSON.stringify(limitedChannels, null, 2), 'utf8');
 }
 
-function removeLevelMessageConfig(guildId) {
-  if (fs.existsSync(levelMessageConfigPath)) {
-    const config = JSON.parse(fs.readFileSync(levelMessageConfigPath, 'utf8'));
-    delete config[guildId];
-    fs.writeFileSync(levelMessageConfigPath, JSON.stringify(config, null, 2), 'utf8');
+function addLimitedChannel(guildId, channelId) {
+  const limitedChannels = getLimitedChannels(guildId);
+  if (!limitedChannels.includes(channelId)) {
+    limitedChannels.push(channelId);
+    setLimitedChannels(guildId, limitedChannels);
   }
 }
+
+function removeLimitedChannel(guildId, channelId) {
+  const limitedChannels = getLimitedChannels(guildId);
+  const index = limitedChannels.indexOf(channelId);
+  if (index > -1) {
+    limitedChannels.splice(index, 1);
+    setLimitedChannels(guildId, limitedChannels);
+  }
+}
+
+function clearLimitedChannels(guildId) {
+  setLimitedChannels(guildId, []);
+}
+
+function isChannelLimited(guildId, channelId) {
+  const limitedChannels = getLimitedChannels(guildId);
+  return limitedChannels.includes(channelId);
+}
+
 
 module.exports = {
   getUserExperience,
@@ -220,8 +242,10 @@ module.exports = {
   getLevelChannelConfig,
   setLevelChannelConfig,
   removeLevelChannelConfig,
-  getLevelMessageConfig,
-  setLevelMessageConfig,
-  removeLevelMessageConfig,
+  getLimitedChannels,
+  addLimitedChannel,
+  removeLimitedChannel,
+  clearLimitedChannels,
+  isChannelLimited,
 };
 

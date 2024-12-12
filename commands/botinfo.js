@@ -34,7 +34,7 @@ module.exports = {
       .setDescription('<a:Developer:852258452688207872> <@561667004755345447>\n<:OwnerGX:852251091248611350> <@758327682546794526> `bot`\n')
       .addFields(
         { name: '<a:Engranajes:852258532472258560> **Prefix**', value: `> ${client.config.prefix}`, inline: true },
-        { name: '<:version:1256725789647310932> **Versión**', value: '> 1.0', inline: true },
+        { name: '<:version:1256725789647310932> **Versión**', value: '> 1.1.52 `12-12-24`', inline: true },
         { name: '**Librería**', value: '> Discord.js', inline: true },
         { name: '<a:Uptime:852258473538486302> **Uptime**', value: `> ${getUptime()}`, inline: true },
         { name: '<a:Figura:852258409150808096> **Comandos**', value: `> ${client.commands.size}`, inline: true },

@@ -117,55 +117,59 @@ client.on('messageCreate', async message => {
   if (!message.guild || message.author.bot) return;
 
   const { addMessageExperience, getLevelChannelConfig } = require('./utils/experienceUtils');
-  // Add XP for sending a message
-  const result = addMessageExperience(message.guild.id, message.author.id, message.content.length);
   
-  // Verificar si el usuario subió de nivel
-  if (result.leveledUp) {
-    const config = getLevelChannelConfig(message.guild.id);
-    const channel = config.channelId ? message.guild.channels.cache.get(config.channelId) : message.channel;
-    
-    if (channel) {
-      const defaultMessage = `¡Felicidades <@${message.author.id}>! Has subido al nivel ${result.level}.`;
-      let customMessage;
+  // Verificar si el mensaje es un comando antes de añadir XP
+  const prefix = getPrefix(message.guild.id);
+  if (!message.content.toLowerCase().startsWith(prefix.toLowerCase())) {
+    // Add XP for sending a message (solo si no es un comando)
+    const result = addMessageExperience(message.guild.id, message.author.id, message.content.length, message.channel.id);
 
-      if (config.message) {
-        customMessage = config.message.text
-          .replace('[user]', `<@${message.author.id}>`)
-          .replace('[lvl]', result.level.toString());
+    // Verificar si el usuario subió de nivel
+    if (result.leveledUp) {
+      const config = getLevelChannelConfig(message.guild.id);
+      const channel = config.channelId ? message.guild.channels.cache.get(config.channelId) : message.channel;
+      
+      if (channel) {
+        const defaultMessage = `¡Felicidades <@${message.author.id}>! Has subido al nivel ${result.level}.`;
+        let customMessage;
 
-        // Detectar y reemplazar IDs de emojis/GIFs
-        customMessage = customMessage.replace(/\[id:(\d+)\]/g, (match, id) => {
-          const emoji = message.guild.emojis.cache.get(id);
-          return emoji ? (emoji.animated ? `<a:${emoji.name}:${id}>` : `<:${emoji.name}:${id}>`) : match;
-        });
+        if (config.message) {
+          customMessage = config.message.text
+            .replace('[user]', `<@${message.author.id}>`)
+            .replace('[lvl]', result.level.toString());
 
-        // Procesar GIFs en el mensaje
-        customMessage = customMessage.replace(/\[gif:(\d+)\]/g, (match, id) => {
-          const gif = message.guild.emojis.cache.get(id);
-          return gif ? `<a:${gif.name}:${id}>` : match;
-        });
+          // Detectar y reemplazar IDs de emojis/GIFs
+          customMessage = customMessage.replace(/\[id:(\d+)\]/g, (match, id) => {
+            const emoji = message.guild.emojis.cache.get(id);
+            return emoji ? (emoji.animated ? `<a:${emoji.name}:${id}>` : `<:${emoji.name}:${id}>`) : match;
+          });
 
-        if (config.message.showDateTime) {
-          const now = new Date();
-          customMessage += `\n(${now.toLocaleString()})`;
-        }
+          // Procesar GIFs en el mensaje
+          customMessage = customMessage.replace(/\[gif:(\d+)\]/g, (match, id) => {
+            const gif = message.guild.emojis.cache.get(id);
+            return gif ? `<a:${gif.name}:${id}>` : match;
+          });
 
-        if (config.message.type === 'embed') {
-          const embed = new EmbedBuilder()
-            .setColor(config.message.color)
-            .setDescription(customMessage);
-          channel.send({ embeds: [embed] });
+          if (config.message.showDateTime) {
+            const now = new Date();
+            customMessage += `\n(${now.toLocaleString()})`;
+          }
+
+          if (config.message.type === 'embed') {
+            const embed = new EmbedBuilder()
+              .setColor(config.message.color)
+              .setDescription(customMessage);
+            channel.send({ embeds: [embed] });
+          } else {
+            channel.send(customMessage);
+          }
         } else {
-          channel.send(customMessage);
+          channel.send(defaultMessage);
         }
-      } else {
-        channel.send(defaultMessage);
       }
     }
   }
 
-  const prefix = getPrefix(message.guild.id);
   const language = getLanguage(message.guild.id);
 
   if (!message.content.toLowerCase().startsWith(prefix.toLowerCase())) return;

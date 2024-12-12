@@ -19,7 +19,7 @@ module.exports = {
 };
 
 async function sendEmojiList(context, emojis, title) {
-  const emojiList = emojis.map(emoji => `${emoji}`).join(' ');
+  const emojiList = emojis.map(emoji => `${emoji} **|** \`<:${emoji.name}:${emoji.id}>\``).join('\n');
   const embed = new EmbedBuilder()
     .setColor('#0099ff')
     .setTitle(title)
