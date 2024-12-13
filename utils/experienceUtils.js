@@ -184,10 +184,10 @@ function removeLevelChannelConfig(guildId) {
 
 function getLimitedChannels(guildId) {
   if (!fs.existsSync(limitedChannelsPath)) {
-    return {};
+    return [];
   }
   const limitedChannels = JSON.parse(fs.readFileSync(limitedChannelsPath, 'utf8'));
-  return limitedChannels[guildId] || [];
+  return Array.isArray(limitedChannels[guildId]) ? limitedChannels[guildId] : [];
 }
 
 function setLimitedChannels(guildId, channels) {
@@ -195,7 +195,7 @@ function setLimitedChannels(guildId, channels) {
   if (fs.existsSync(limitedChannelsPath)) {
     limitedChannels = JSON.parse(fs.readFileSync(limitedChannelsPath, 'utf8'));
   }
-  limitedChannels[guildId] = channels;
+  limitedChannels[guildId] = Array.isArray(channels) ? channels : [];
   fs.writeFileSync(limitedChannelsPath, JSON.stringify(limitedChannels, null, 2), 'utf8');
 }
 
