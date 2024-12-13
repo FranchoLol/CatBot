@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
-const { getLevelConfig, saveLevelConfig, getLimitedChannels } = require('../utils/experienceUtils');
+const { getLevelConfig, saveLevelConfig, getLimitedChannels, getLimitedRoles } = require('../utils/experienceUtils');
 
 module.exports = {
   name: 'levelconfig',
@@ -13,10 +13,11 @@ module.exports = {
 
     const config = getLevelConfig();
     const limitedChannels = getLimitedChannels(message.guild.id);
+    const limitedRoles = getLimitedRoles(message.guild.id);
 
     if (args.length === 0) {
       // Mostrar la configuración actual
-      const embed = createConfigEmbed(config, limitedChannels, message.guild, lang);
+      const embed = createConfigEmbed(config, limitedChannels, limitedRoles, message.guild, lang);
       return message.reply({ embeds: [embed] });
     }
 
@@ -36,7 +37,7 @@ module.exports = {
     }
 
     saveLevelConfig(config);
-    const embed = createConfigEmbed(config, limitedChannels, message.guild, lang);
+    const embed = createConfigEmbed(config, limitedChannels, limitedRoles, message.guild, lang);
     return message.reply({ content: getResponse(lang, 'configUpdated'), embeds: [embed] });
   },
   data: new SlashCommandBuilder()
@@ -60,6 +61,7 @@ module.exports = {
 
     const config = getLevelConfig();
     const limitedChannels = getLimitedChannels(interaction.guild.id);
+    const limitedRoles = getLimitedRoles(interaction.guild.id);
     const option = interaction.options.getString('option');
     const value = interaction.options.getString('value');
 
@@ -76,12 +78,12 @@ module.exports = {
     }
 
     saveLevelConfig(config);
-    const embed = createConfigEmbed(config, limitedChannels, interaction.guild, lang);
+    const embed = createConfigEmbed(config, limitedChannels, limitedRoles, interaction.guild, lang);
     return interaction.reply({ content: getResponse(lang, 'configUpdated'), embeds: [embed] });
   },
 };
 
-function createConfigEmbed(config, limitedChannels, guild, lang) {
+function createConfigEmbed(config, limitedChannels, limitedRoles, guild, lang) {
   return new EmbedBuilder()
     .setColor('#0099ff')
     .setTitle(getResponse(lang, 'configTitle'))
@@ -89,9 +91,11 @@ function createConfigEmbed(config, limitedChannels, guild, lang) {
       { name: getResponse(lang, 'xpCommandCooldown'), value: `${config.xpCommandCooldown / (60 * 60 * 1000)} ${getResponse(lang, 'hours')}` },
       { name: getResponse(lang, 'limitedChannels'), value: limitedChannels.length > 0 ? 
         limitedChannels.map(channelId => `<#${channelId}>`).join(', ') : 
-        getResponse(lang, 'noLimitedChannels') }
-    )
-    .setFooter({ text: getResponse(lang, 'configFooter') });
+        getResponse(lang, 'noLimitedChannels') },
+      { name: getResponse(lang, 'limitedRoles'), value: limitedRoles.length > 0 ? 
+        limitedRoles.map(roleId => `<@&${roleId}>`).join(', ') : 
+        getResponse(lang, 'noLimitedRoles') }
+    );
 }
 
 function getResponse(lang, key, ...args) {
@@ -106,7 +110,9 @@ function getResponse(lang, key, ...args) {
       hours: 'horas',
       limitedChannels: 'Canales limitados',
       noLimitedChannels: 'No hay canales limitados',
-      configFooter: 'Usa c!levelconfig [opción] [valor] para modificar la configuración.'
+      configFooter: 'Usa c!levelconfig [opción] [valor] para modificar la configuración.',
+      limitedRoles: 'Roles limitados',
+      noLimitedRoles: 'No hay roles limitados'
     },
     en: {
       noPermission: 'You don\'t have permission to configure the level system.',
@@ -118,7 +124,9 @@ function getResponse(lang, key, ...args) {
       hours: 'hours',
       limitedChannels: 'Limited Channels',
       noLimitedChannels: 'No limited channels',
-      configFooter: 'Use c!levelconfig [option] [value] to modify the configuration.'
+      configFooter: 'Use c!levelconfig [option] [value] to modify the configuration.',
+      limitedRoles: 'Limited Roles',
+      noLimitedRoles: 'No limited roles'
     },
     pt: {
       noPermission: 'Você não tem permissão para configurar o sistema de níveis.',
@@ -130,7 +138,9 @@ function getResponse(lang, key, ...args) {
       hours: 'horas',
       limitedChannels: 'Canais limitados',
       noLimitedChannels: 'Não há canais limitados',
-      configFooter: 'Use c!levelconfig [opção] [valor] para modificar a configuração.'
+      configFooter: 'Use c!levelconfig [opção] [valor] para modificar a configuração.',
+      limitedRoles: 'Papéis limitados',
+      noLimitedRoles: 'Não há papéis limitados'
     }
   };
 

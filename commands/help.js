@@ -20,7 +20,9 @@ const commands = [
     { name: 'movechannel', description: 'Mueve un canal a una categoría o posición', adminOnly: true },
     { name: 'warn', description: 'Advierte a un usuario', adminOnly: true },
     { name: 'delwarn', description: 'Elimina una advertencia de un usuario', adminOnly: true },
-    { name: 'warnconfig', description: 'Configura el sistema de advertencias', adminOnly: true },
+    { name: 'warnconfig', description: 'Muestra la configuración del sistema de advertencias', adminOnly: true },
+    { name: 'warnconfigmax', description: 'Establece el número máximo de advertencias', adminOnly: true },
+    { name: 'warnconfigaction', description: 'Establece la acción al alcanzar el máximo de advertencias', adminOnly: true },
   ]
 },
 {
@@ -87,7 +89,7 @@ const commands = [
     { name: 'levellimitrole', description: 'Limita la ganancia de XP para roles específicos', adminOnly: true },
     { name: 'levelrestorerol', description: 'Restaura la ganancia de XP para roles específicos', adminOnly: true },
     { name: 'levelrestoreallroles', description: 'Restaura la ganancia de XP para todos los roles', adminOnly: true },
-    { name: 'levelconfig', description: 'Configura el sistema de niveles', adminOnly: true },
+    { name: 'levelconfig', description: 'Muestra la configuración del sistema de niveles', adminOnly: true },
   ]
 },
 {
