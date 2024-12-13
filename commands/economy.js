@@ -1,43 +1,15 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
-
-const economyDataPath = path.join(__dirname, '..', 'data', 'economy.json');
-const economyConfigPath = path.join(__dirname, '..', 'data', 'economyConfig.json');
-
-function getEconomyData() {
-  if (!fs.existsSync(economyDataPath)) {
-    fs.writeFileSync(economyDataPath, '{}', 'utf8');
-    return {};
-  }
-  return JSON.parse(fs.readFileSync(economyDataPath, 'utf8'));
-}
-
-function saveEconomyData(data) {
-  fs.writeFileSync(economyDataPath, JSON.stringify(data, null, 2), 'utf8');
-}
-
-function getEconomyConfig() {
-  return JSON.parse(fs.readFileSync(economyConfigPath, 'utf8'));
-}
-
-function getUserBalance(guildId, userId) {
-  const economyData = getEconomyData();
-  if (!economyData[guildId]) economyData[guildId] = {};
-  if (!economyData[guildId][userId]) {
-    const config = getEconomyConfig();
-    economyData[guildId][userId] = {
-      balance: config.startingBalance,
-      bank: 0,
-      lastDaily: 0,
-      lastWork: 0,
-      inventory: []
-    };
-    saveEconomyData(economyData);
-  }
-  return economyData[guildId][userId];
-}
+const { 
+  getUserBalance, 
+  updateUserBalance, 
+  transferMoney, 
+  addItemToInventory, 
+  removeItemFromInventory, 
+  getShopItems, 
+  updateShopItemStock,
+  getEconomyConfig
+} = require('../utils/economyUtils');
 
 module.exports = {
   balance: {
@@ -78,7 +50,7 @@ module.exports = {
 
       userData.balance += config.dailyAmount;
       userData.lastDaily = now;
-      saveEconomyData(getEconomyData());
+      updateUserBalance(guildId, user.id, config.dailyAmount);
 
       await interaction.reply(`Has recibido tu recompensa diaria de ${config.dailyAmount} ${config.defaultCurrency}!`);
     },
@@ -100,9 +72,8 @@ module.exports = {
       }
 
       const earned = Math.floor(Math.random() * (config.workAmount.max - config.workAmount.min + 1)) + config.workAmount.min;
-      userData.balance += earned;
+      updateUserBalance(guildId, user.id, earned);
       userData.lastWork = now;
-      saveEconomyData(getEconomyData());
 
       await interaction.reply(`Has trabajado duro y ganado ${earned} ${config.defaultCurrency}!`);
     },
@@ -130,9 +101,8 @@ module.exports = {
       }
 
       const stolenAmount = Math.floor(targetData.balance * config.robPercentage);
-      userData.balance += stolenAmount;
-      targetData.balance -= stolenAmount;
-      saveEconomyData(getEconomyData());
+      updateUserBalance(guildId, user.id, stolenAmount);
+      updateUserBalance(guildId, target.id, -stolenAmount);
 
       await interaction.reply(`Has robado exitosamente ${stolenAmount} ${config.defaultCurrency} de ${target.username}!`);
     },
@@ -155,9 +125,8 @@ module.exports = {
       if (amount <= 0) return interaction.reply('La cantidad debe ser positiva.');
       if (amount > userData.balance) return interaction.reply('No tienes suficiente dinero en tu billetera.');
 
-      userData.balance -= amount;
-      userData.bank += amount;
-      saveEconomyData(getEconomyData());
+      updateUserBalance(guildId, user.id, -amount, 'balance');
+      updateUserBalance(guildId, user.id, amount, 'bank');
 
       await interaction.reply(`Has depositado ${amount} ${config.defaultCurrency} en tu cuenta bancaria.`);
     },
@@ -180,9 +149,8 @@ module.exports = {
       if (amount <= 0) return interaction.reply('La cantidad debe ser positiva.');
       if (amount > userData.bank) return interaction.reply('No tienes suficiente dinero en tu cuenta bancaria.');
 
-      userData.balance += amount;
-      userData.bank -= amount;
-      saveEconomyData(getEconomyData());
+      updateUserBalance(guildId, user.id, amount, 'balance');
+      updateUserBalance(guildId, user.id, -amount, 'bank');
 
       await interaction.reply(`Has retirado ${amount} ${config.defaultCurrency} de tu cuenta bancaria.`);
     },
@@ -204,22 +172,15 @@ module.exports = {
       const { guildId, user } = interaction;
       const target = interaction.options.getUser('target');
       const amount = interaction.options.getInteger('amount');
-      const userData = getUserBalance(guildId, user.id);
-      const targetData = getUserBalance(guildId, target.id);
       const config = getEconomyConfig();
 
       if (target.id === user.id) return interaction.reply('No puedes transferirte dinero a ti mismo.');
       if (amount <= 0) return interaction.reply('La cantidad debe ser positiva.');
-      if (amount > userData.balance) return interaction.reply('No tienes suficiente dinero en tu billetera.');
 
-      const tax = Math.floor(amount * config.transferTax);
-      const transferAmount = amount - tax;
+      const result = transferMoney(guildId, user.id, target.id, amount);
+      if (!result.success) return interaction.reply('No tienes suficiente dinero en tu billetera.');
 
-      userData.balance -= amount;
-      targetData.balance += transferAmount;
-      saveEconomyData(getEconomyData());
-
-      await interaction.reply(`Has transferido ${transferAmount} ${config.defaultCurrency} a ${target.username}. Se aplicó un impuesto de ${tax} ${config.defaultCurrency}.`);
+      await interaction.reply(`Has transferido ${result.transferAmount} ${config.defaultCurrency} a ${target.username}. Se aplicó un impuesto de ${result.tax} ${config.defaultCurrency}.`);
     },
   },
 
@@ -234,7 +195,7 @@ module.exports = {
         .setTitle('Tienda')
         .setDescription('Estos son los items disponibles para comprar:');
 
-      for (const item of config.shopItems) {
+      for (const item of getShopItems()) {
         embed.addFields({ name: item.name, value: `Precio: ${item.price} ${config.defaultCurrency}\nStock: ${item.stock === -1 ? 'Ilimitado' : item.stock}`, inline: true });
       }
 
@@ -244,6 +205,7 @@ module.exports = {
 
   buy: {
     data: new SlashCommandBuilder()
+      .setName('buy')
       .setName('buy')
       .setDescription('Compra un item de la tienda')
       .addStringOption(option => 
@@ -261,7 +223,7 @@ module.exports = {
       const userData = getUserBalance(guildId, user.id);
       const config = getEconomyConfig();
 
-      const item = config.shopItems.find(i => i.name.toLowerCase() === itemName.toLowerCase());
+      const item = getShopItems().find(i => i.name.toLowerCase() === itemName.toLowerCase());
       if (!item) return interaction.reply('Ese item no existe en la tienda.');
 
       const totalCost = item.price * quantity;
@@ -269,14 +231,13 @@ module.exports = {
 
       if (item.stock !== -1) {
         if (item.stock < quantity) return interaction.reply('No hay suficiente stock de este item.');
-        item.stock -= quantity;
+        updateShopItemStock(item.name, item.stock - quantity);
       }
 
-      userData.balance -= totalCost;
+      updateUserBalance(guildId, user.id, -totalCost);
       for (let i = 0; i < quantity; i++) {
-        userData.inventory.push(item.name);
+        addItemToInventory(guildId, user.id, item.name);
       }
-      saveEconomyData(getEconomyData());
 
       await interaction.reply(`Has comprado ${quantity} ${item.name} por ${totalCost} ${config.defaultCurrency}.`);
     },
@@ -340,11 +301,11 @@ module.exports = {
       }
 
       if (currency === config.defaultCurrency) {
-        userData.balance += amount;
+        updateUserBalance(interaction.guildId, target.id, amount);
       } else {
         userData[currency] = (userData[currency] || 0) + amount;
+        updateUserBalance(interaction.guildId, target.id, 0); // This will save the updated userData
       }
-      saveEconomyData(getEconomyData());
 
       await interaction.reply(`Se han añadido ${amount} ${currency} a la cuenta de ${target.username}.`);
     },
@@ -385,14 +346,14 @@ module.exports = {
         if (userData.balance < amount) {
           return interaction.reply(`${target.username} no tiene suficiente ${currency} para quitar.`);
         }
-        userData.balance -= amount;
+        updateUserBalance(interaction.guildId, target.id, -amount);
       } else {
         if (!userData[currency] || userData[currency] < amount) {
           return interaction.reply(`${target.username} no tiene suficiente ${currency} para quitar.`);
         }
         userData[currency] -= amount;
+        updateUserBalance(interaction.guildId, target.id, 0); // This will save the updated userData
       }
-      saveEconomyData(getEconomyData());
 
       await interaction.reply(`Se han quitado ${amount} ${currency} de la cuenta de ${target.username}.`);
     },
@@ -435,7 +396,7 @@ module.exports = {
         if (userData.balance < amount) {
           return interaction.reply(`No tienes suficiente ${fromCurrency} para hacer este cambio.`);
         }
-        userData.balance -= amount;
+        updateUserBalance(guildId, user.id, -amount);
       } else {
         if (!userData[fromCurrency] || userData[fromCurrency] < amount) {
           return interaction.reply(`No tienes suficiente ${fromCurrency} para hacer este cambio.`);
@@ -445,14 +406,15 @@ module.exports = {
 
       const convertedAmount = Math.floor(amount * exchangeRate);
       if (toCurrency === config.defaultCurrency) {
-        userData.balance += convertedAmount;
+        updateUserBalance(guildId, user.id, convertedAmount);
       } else {
         userData[toCurrency] = (userData[toCurrency] || 0) + convertedAmount;
       }
 
-      saveEconomyData(getEconomyData());
+      updateUserBalance(guildId, user.id, 0); // This will save the updated userData
 
       await interaction.reply(`Has cambiado ${amount} ${fromCurrency} por ${convertedAmount} ${toCurrency}.`);
     },
   },
 };
+
