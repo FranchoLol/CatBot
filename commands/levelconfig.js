@@ -31,30 +31,6 @@ module.exports = {
         }
         config.xpCommandCooldown = cooldown * 60 * 60 * 1000; // Convert hours to milliseconds
         break;
-      case 'xprange':
-        const [minLevel, maxLevel, minXP, maxXP] = value.split(' ').map(Number);
-        if ([minLevel, maxLevel, minXP, maxXP].some(isNaN)) {
-          return message.reply(getResponse(lang, 'invalidXPRange'));
-        }
-        const existingRange = config.xpRanges.find(range => range.minLevel <= minLevel && range.maxLevel >= maxLevel);
-        if (existingRange) {
-          Object.assign(existingRange, { minLevel, maxLevel, minXP, maxXP });
-        } else {
-          config.xpRanges.push({ minLevel, maxLevel, minXP, maxXP });
-        }
-        break;
-      case 'messagexp':
-        const [minLength, maxLength, xp] = value.split(' ').map(Number);
-        if ([minLength, maxLength, xp].some(isNaN)) {
-          return message.reply(getResponse(lang, 'invalidMessageXP'));
-        }
-        const existingMessageXP = config.messageLengthXP.find(range => range.minLength <= minLength && range.maxLength >= maxLength);
-        if (existingMessageXP) {
-          Object.assign(existingMessageXP, { minLength, maxLength, xp });
-        } else {
-          config.messageLengthXP.push({ minLength, maxLength, xp });
-        }
-        break;
       default:
         return message.reply(getResponse(lang, 'invalidOption'));
     }
@@ -71,9 +47,7 @@ module.exports = {
         .setDescription('Opción a configurar')
         .setRequired(true)
         .addChoices(
-          { name: 'XP Command Cooldown', value: 'xpcommandcooldown' },
-          { name: 'XP Range', value: 'xprange' },
-          { name: 'Message XP', value: 'messagexp' }
+          { name: 'XP Command Cooldown', value: 'xpcommandcooldown' }
         ))
     .addStringOption(option =>
       option.setName('value')
@@ -97,30 +71,6 @@ module.exports = {
         }
         config.xpCommandCooldown = cooldown * 60 * 60 * 1000; // Convert hours to milliseconds
         break;
-      case 'xprange':
-        const [minLevel, maxLevel, minXP, maxXP] = value.split(' ').map(Number);
-        if ([minLevel, maxLevel, minXP, maxXP].some(isNaN)) {
-          return interaction.reply({ content: getResponse(lang, 'invalidXPRange'), ephemeral: true });
-        }
-        const existingRange = config.xpRanges.find(range => range.minLevel <= minLevel && range.maxLevel >= maxLevel);
-        if (existingRange) {
-          Object.assign(existingRange, { minLevel, maxLevel, minXP, maxXP });
-        } else {
-          config.xpRanges.push({ minLevel, maxLevel, minXP, maxXP });
-        }
-        break;
-      case 'messagexp':
-        const [minLength, maxLength, xp] = value.split(' ').map(Number);
-        if ([minLength, maxLength, xp].some(isNaN)) {
-          return interaction.reply({ content: getResponse(lang, 'invalidMessageXP'), ephemeral: true });
-        }
-        const existingMessageXP = config.messageLengthXP.find(range => range.minLength <= minLength && range.maxLength >= maxLength);
-        if (existingMessageXP) {
-          Object.assign(existingMessageXP, { minLength, maxLength, xp });
-        } else {
-          config.messageLengthXP.push({ minLength, maxLength, xp });
-        }
-        break;
       default:
         return interaction.reply({ content: getResponse(lang, 'invalidOption'), ephemeral: true });
     }
@@ -137,12 +87,6 @@ function createConfigEmbed(config, limitedChannels, guild, lang) {
     .setTitle(getResponse(lang, 'configTitle'))
     .addFields(
       { name: getResponse(lang, 'xpCommandCooldown'), value: `${config.xpCommandCooldown / (60 * 60 * 1000)} ${getResponse(lang, 'hours')}` },
-      { name: getResponse(lang, 'xpRanges'), value: config.xpRanges.map(range => 
-        `${getResponse(lang, 'level')} ${range.minLevel}-${range.maxLevel}: ${range.minXP}-${range.maxXP} XP`
-      ).join('\n') },
-      { name: getResponse(lang, 'messageXP'), value: config.messageLengthXP.map(range => 
-        `${range.minLength}-${range.maxLength} ${getResponse(lang, 'characters')}: ${range.xp} XP`
-      ).join('\n') },
       { name: getResponse(lang, 'limitedChannels'), value: limitedChannels.length > 0 ? 
         limitedChannels.map(channelId => `<#${channelId}>`).join(', ') : 
         getResponse(lang, 'noLimitedChannels') }
@@ -155,16 +99,10 @@ function getResponse(lang, key, ...args) {
     es: {
       noPermission: 'No tienes permiso para configurar el sistema de niveles.',
       invalidCooldown: 'El tiempo de espera debe ser un número positivo.',
-      invalidXPRange: 'El rango de XP debe ser especificado como: minLevel maxLevel minXP maxXP',
-      invalidMessageXP: 'La XP por mensaje debe ser especificada como: minLength maxLength xp',
-      invalidOption: 'Opción inválida. Usa xpcommandcooldown, xprange, o messagexp.',
+      invalidOption: 'Opción inválida. Usa xpcommandcooldown.',
       configUpdated: 'Configuración actualizada con éxito.',
       configTitle: '⚙️ Configuración del Sistema de Niveles',
       xpCommandCooldown: 'Tiempo de espera del comando XP',
-      xpRanges: 'Rangos de XP',
-      messageXP: 'XP por longitud de mensaje',
-      level: 'Nivel',
-      characters: 'caracteres',
       hours: 'horas',
       limitedChannels: 'Canales limitados',
       noLimitedChannels: 'No hay canales limitados',
@@ -173,16 +111,10 @@ function getResponse(lang, key, ...args) {
     en: {
       noPermission: 'You don\'t have permission to configure the level system.',
       invalidCooldown: 'Cooldown must be a positive number.',
-      invalidXPRange: 'XP range must be specified as: minLevel maxLevel minXP maxXP',
-      invalidMessageXP: 'Message XP must be specified as: minLength maxLength xp',
-      invalidOption: 'Invalid option. Use xpcommandcooldown, xprange, or messagexp.',
+      invalidOption: 'Invalid option. Use xpcommandcooldown.',
       configUpdated: 'Configuration updated successfully.',
       configTitle: '⚙️ Level System Configuration',
       xpCommandCooldown: 'XP Command Cooldown',
-      xpRanges: 'XP Ranges',
-      messageXP: 'XP per message length',
-      level: 'Level',
-      characters: 'characters',
       hours: 'hours',
       limitedChannels: 'Limited Channels',
       noLimitedChannels: 'No limited channels',
@@ -191,16 +123,10 @@ function getResponse(lang, key, ...args) {
     pt: {
       noPermission: 'Você não tem permissão para configurar o sistema de níveis.',
       invalidCooldown: 'O tempo de espera deve ser um número positivo.',
-      invalidXPRange: 'O intervalo de XP deve ser especificado como: minLevel maxLevel minXP maxXP',
-      invalidMessageXP: 'O XP por mensagem deve ser especificado como: minLength maxLength xp',
-      invalidOption: 'Opção inválida. Use xpcommandcooldown, xprange ou messagexp.',
+      invalidOption: 'Opção inválida. Use xpcommandcooldown.',
       configUpdated: 'Configuração atualizada com sucesso.',
       configTitle: '⚙️ Configuração do Sistema de Níveis',
       xpCommandCooldown: 'Tempo de espera do comando XP',
-      xpRanges: 'Intervalos de XP',
-      messageXP: 'XP por comprimento de mensagem',
-      level: 'Nível',
-      characters: 'caracteres',
       hours: 'horas',
       limitedChannels: 'Canais limitados',
       noLimitedChannels: 'Não há canais limitados',

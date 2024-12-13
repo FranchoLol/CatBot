@@ -5,6 +5,7 @@ const experiencePath = path.join(__dirname, '..', 'data', 'experience.json');
 const levelConfigPath = path.join(__dirname, '..', 'data', 'levelConfig.json');
 const levelChannelConfigPath = path.join(__dirname, '..', 'data', 'levelChannelConfig.json');
 const limitedChannelsPath = path.join(__dirname, '..', 'data', 'limitedChannels.json');
+const limitedRolesPath = path.join(__dirname, '..', 'data', 'limitedRoles.json');
 
 function getExperience() {
   if (!fs.existsSync(experiencePath)) {
@@ -225,6 +226,49 @@ function isChannelLimited(guildId, channelId) {
   return limitedChannels.includes(channelId);
 }
 
+function getLimitedRoles(guildId) {
+  if (!fs.existsSync(limitedRolesPath)) {
+    return [];
+  }
+  const limitedRoles = JSON.parse(fs.readFileSync(limitedRolesPath, 'utf8'));
+  return Array.isArray(limitedRoles[guildId]) ? limitedRoles[guildId] : [];
+}
+
+function setLimitedRoles(guildId, roles) {
+  let limitedRoles = {};
+  if (fs.existsSync(limitedRolesPath)) {
+    limitedRoles = JSON.parse(fs.readFileSync(limitedRolesPath, 'utf8'));
+  }
+  limitedRoles[guildId] = Array.isArray(roles) ? roles : [];
+  fs.writeFileSync(limitedRolesPath, JSON.stringify(limitedRoles, null, 2), 'utf8');
+}
+
+function addLimitedRole(guildId, roleId) {
+  const limitedRoles = getLimitedRoles(guildId);
+  if (!limitedRoles.includes(roleId)) {
+    limitedRoles.push(roleId);
+    setLimitedRoles(guildId, limitedRoles);
+  }
+}
+
+function removeLimitedRole(guildId, roleId) {
+  const limitedRoles = getLimitedRoles(guildId);
+  const index = limitedRoles.indexOf(roleId);
+  if (index > -1) {
+    limitedRoles.splice(index, 1);
+    setLimitedRoles(guildId, limitedRoles);
+  }
+}
+
+function clearLimitedRoles(guildId) {
+  setLimitedRoles(guildId, []);
+}
+
+function isRoleLimited(guildId, roleId) {
+  const limitedRoles = getLimitedRoles(guildId);
+  return limitedRoles.includes(roleId);
+}
+
 
 module.exports = {
   getUserExperience,
@@ -247,5 +291,10 @@ module.exports = {
   removeLimitedChannel,
   clearLimitedChannels,
   isChannelLimited,
+  getLimitedRoles,
+  addLimitedRole,
+  removeLimitedRole,
+  clearLimitedRoles,
+  isRoleLimited,
 };
 
