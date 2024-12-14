@@ -33,3 +33,6 @@ Thumbs.db
 
 # Directorios de datos
 data/
+
+# Congelados
+old/

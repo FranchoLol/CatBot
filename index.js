@@ -1,5 +1,5 @@
-require('dotenv').config();
-const { 
+import 'dotenv/config';
+import { 
   Client, 
   GatewayIntentBits, 
   Partials, 
@@ -7,9 +7,10 @@ const {
   Collection, 
   PresenceUpdateStatus,
   EmbedBuilder
-} = require('discord.js');
-const fs = require('fs');
-const path = require('path');
+} from 'discord.js';
+import fs from 'fs';
+import path from 'path';
+import chalk from 'chalk';
 
 const client = new Client({
   intents: [
@@ -54,18 +55,22 @@ function getLanguage(guildId) {
 
 // Cargar comandos
 const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-
-for (const file of commandFiles) {
-  const filePath = path.join(commandsPath, file);
-  const command = require(filePath);
-  if ('data' in command && 'execute' in command) {
-    client.slashCommands.set(command.data.name, command);
-  }
-  if ('name' in command && 'run' in command) {
-    client.commands.set(command.name, command);
+const commandFolders = fs.readdirSync(commandsPath);
+for (const folder of commandFolders) {
+  const folderPath = path.join(commandsPath, folder);
+  const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith('.js'));
+  for (const file of commandFiles) {
+    const filePath = path.join(folderPath, file);
+    const command = await import(filePath);
+    if ('data' in command && 'execute' in command.default) {
+      client.slashCommands.set(command.default.data.name, command.default);
+    }
+    if ('name' in command.default && 'run' in command.default) {
+      client.commands.set(command.default.name, command.default);
+    }
   }
 }
+
 
 // Función para contar usuarios en todos los servidores
 function getTotalUsers() {
@@ -73,7 +78,7 @@ function getTotalUsers() {
 }
 
 client.once('ready', () => {
-  console.log(`Bot conectado: ${client.user.tag}!`);
+  console.log(chalk.magenta(`Bot conectado: ${client.user.tag}!`));
 
   client.user.setStatus(PresenceUpdateStatus.DoNotDisturb);
 
@@ -117,10 +122,18 @@ client.on('messageCreate', async message => {
   try {
     if (!message.guild || message.author.bot) return;
 
-    const { addMessageExperience, getLevelChannelConfig } = require('./utils/experienceUtils');
+    const { addMessageExperience, getLevelChannelConfig } = await import('./utils/experienceUtils');
     
-    // Verificar si el mensaje es un comando antes de añadir XP
     const prefix = getPrefix(message.guild.id);
+    const mentionRegex = new RegExp(`^<@!?${client.user.id}>( |)$`);
+
+    if (mentionRegex.test(message.content)) {
+      const mentionCommand = await import('./commands/bot/mention');
+      mentionCommand.default.execute(message, prefix);
+      return;
+    }
+
+    // Verificar si el mensaje es un comando antes de añadir XP
     if (!message.content.toLowerCase().startsWith(prefix.toLowerCase())) {
       // Add XP for sending a message (solo si no es un comando)
       const result = addMessageExperience(message.guild.id, message.author.id, message.content.length, message.channel.id);
@@ -199,8 +212,6 @@ client.on('messageCreate', async message => {
     // }
   }
 });
-
-
 
 client.login(process.env.DISCORD_TOKEN);
 

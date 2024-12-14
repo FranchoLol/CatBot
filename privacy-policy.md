@@ -1,35 +1,45 @@
-# Política de Privacidad para CatBot
+# Política de Privacidad de CatBot 🐈
 
-**Última actualización: [Fecha]**
+Última actualización: [Fecha]
 
-En **CatBot**, nos comprometemos a proteger tu privacidad. Esta política explica cómo manejamos la información que procesamos mientras interactúas con el bot.
+## 1. Introducción
 
-## Información Recopilada
+Esta Política de Privacidad describe cómo CatBot 🐈 ("nosotros", "nuestro" o "el bot") recopila, usa y comparte información cuando utilizas nuestro bot de Discord.
 
-**CatBot** no recopila ni almacena datos personales identificables. Sin embargo, el bot puede procesar y almacenar temporalmente la siguiente información para ofrecer sus servicios:
+## 2. Información que Recopilamos
 
-- **Comandos ejecutados:** El bot registra los comandos que los usuarios ejecutan (por ejemplo, `balance`, `work`, `level`, etc.) para proporcionar la funcionalidad adecuada.
-- **Interacciones en el servidor:** **CatBot** utiliza la información del servidor de Discord, como los roles, canales y usuarios, para realizar tareas de moderación, asignación de roles, y para calcular estadísticas de niveles y economía.
+- **Información de Usuario**: ID de usuario de Discord, nombre de usuario, y avatar.
+- **Información del Servidor**: ID del servidor, nombre del servidor, y roles del usuario.
+- **Datos de Uso**: Comandos utilizados, frecuencia de uso, y configuraciones personalizadas.
 
-**CatBot** no recopila información personal como nombres reales, correos electrónicos, contraseñas ni información de pago.
+## 3. Cómo Usamos la Información
 
-## Uso de la Información
+Utilizamos la información recopilada para:
 
-La información generada mientras interactúas con **CatBot** (por ejemplo, comandos ejecutados, cambios de roles, actividad de niveles y economía) se usa únicamente para mejorar la experiencia dentro del servidor de Discord y para realizar las funciones específicas del bot.
+- Proporcionar y mantener la funcionalidad del bot.
+- Mejorar y personalizar la experiencia del usuario.
+- Analizar el uso del bot para mejorar nuestros servicios.
 
-## Seguridad
+## 4. Compartir Información
 
-**CatBot** no guarda datos personales fuera de las interacciones necesarias para los comandos del bot. Toda la información es tratada de manera segura y no es compartida con terceros.
+No vendemos ni compartimos tu información personal con terceros, excepto:
 
-## Cambios a esta Política
+- Cuando sea necesario para proporcionar el servicio (por ejemplo, almacenamiento en la nube).
+- Cuando estemos obligados por ley o para proteger nuestros derechos.
 
-Podemos actualizar esta política en cualquier momento. Cualquier cambio significativo será anunciado a través de nuestro servidor de soporte o por mensaje directo en Discord.
+## 5. Seguridad de Datos
 
-## Contacto
+Implementamos medidas de seguridad para proteger tu información, pero ningún método de transmisión por Internet o almacenamiento electrónico es 100% seguro.
 
-Si tienes alguna pregunta o inquietud sobre nuestra Política de Privacidad, puedes contactarnos a través del servidor de soporte de **CatBot**.
+## 6. Tus Derechos
 
----
+Tienes derecho a acceder, corregir o eliminar tu información personal. Contacta con nosotros para ejercer estos derechos.
 
-**Aceptar esta Política de Privacidad**  
-Al usar **CatBot**, aceptas los términos de esta Política de Privacidad. Si no estás de acuerdo con esta política, te pedimos que dejes de usar el bot.
+## 7. Cambios a esta Política
+
+Podemos actualizar esta política ocasionalmente. Te notificaremos sobre cambios significativos publicando la nueva política en nuestro servidor de soporte.
+
+## 8. Contacto
+
+Si tienes preguntas sobre esta política, contáctanos en [correo electrónico/servidor de Discord].
+
