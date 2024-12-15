@@ -1,6 +1,29 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder } = require('discord.js');
 
+function createRPSEmbed(user, userChoice, botChoice, result) {
+  let color;
+  switch (result) {
+    case 'Ganaste':
+      color = '#00FF00'; // Verde
+      break;
+    case 'Perdiste':
+      color = '#FF0000'; // Rojo
+      break;
+    default:
+      color = '#0099ff'; // Azul
+  }
+
+  return new EmbedBuilder()
+    .setColor(color)
+    .setTitle('Piedra, Papel, Tijera')
+    .addFields(
+      { name: 'Tu elección', value: userChoice, inline: true },
+      { name: 'Elección del bot', value: botChoice, inline: true },
+      { name: 'Resultado', value: result }
+    );
+}
+
 module.exports = {
   name: 'rps',
   description: 'Juega piedra, papel o tijera contra el bot',
@@ -28,14 +51,7 @@ module.exports = {
       result = 'Perdiste';
     }
 
-    const embed = new EmbedBuilder()
-      .setColor('#0099ff')
-      .setTitle('Piedra, Papel, Tijera')
-      .addFields(
-        { name: 'Tu elección', value: userChoice, inline: true },
-        { name: 'Elección del bot', value: botChoice, inline: true },
-        { name: 'Resultado', value: result }
-      );
+    const embed = createRPSEmbed(message.author, userChoice, botChoice, result);
 
     message.reply({ embeds: [embed] });
   },
@@ -69,14 +85,7 @@ module.exports = {
       result = 'Perdiste';
     }
 
-    const embed = new EmbedBuilder()
-      .setColor('#0099ff')
-      .setTitle('Piedra, Papel, Tijera')
-      .addFields(
-        { name: 'Tu elección', value: userChoice, inline: true },
-        { name: 'Elección del bot', value: botChoice, inline: true },
-        { name: 'Resultado', value: result }
-      );
+    const embed = createRPSEmbed(interaction.user, userChoice, botChoice, result);
 
     interaction.reply({ embeds: [embed] });
   },
