@@ -5,6 +5,7 @@ node_modules/
 .env
 # Archivos de texto con datos sensibles
 Cosas.txt
+structure.txt
 
 # Logs
 logs
