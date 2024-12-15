@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { PermissionFlagsBits } = require('discord.js');
-const { addLimitedChannel, getLimitedChannels } = require('../../utils/experienceUtils');
+const { addLimitedChannel, getLimitedChannels } = require('../utils/experienceUtils');
 
 module.exports = {
   name: 'levellimitchannel',

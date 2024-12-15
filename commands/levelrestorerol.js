@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { PermissionFlagsBits } = require('discord.js');
-const { removeLimitedRole, getLimitedRoles } = require('../../utils/experienceUtils');
+const { removeLimitedRole, getLimitedRoles } = require('../utils/experienceUtils');
 
 module.exports = {
   name: 'levelrestorerol',

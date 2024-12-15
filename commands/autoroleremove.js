@@ -1,19 +1,24 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { PermissionFlagsBits } = require('discord.js');
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
 
-const autoroleFile = path.join(__dirname, '..', '..', 'data', 'autoroles.json');
+const autoroleFile = path.join(__dirname, '..', 'data', 'autoroles.json');
 
-function getAutoroles() {
-  if (!fs.existsSync(autoroleFile)) {
-    return {};
+async function getAutoroles() {
+  try {
+    const data = await fs.readFile(autoroleFile, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return {};
+    }
+    throw error;
   }
-  return JSON.parse(fs.readFileSync(autoroleFile, 'utf8'));
 }
 
-function saveAutoroles(autoroles) {
-  fs.writeFileSync(autoroleFile, JSON.stringify(autoroles, null, 2));
+async function saveAutoroles(autoroles) {
+  await fs.writeFile(autoroleFile, JSON.stringify(autoroles, null, 2));
 }
 
 module.exports = {
@@ -39,7 +44,7 @@ module.exports = {
       return message.reply('Por favor, menciona al menos un rol.');
     }
 
-    const autoroles = getAutoroles();
+    const autoroles = await getAutoroles();
     if (!autoroles[message.guild.id] || !autoroles[message.guild.id][type]) {
       return message.reply(`No hay roles automáticos configurados para ${type === 'user' ? 'usuarios' : 'bots'}.`);
     }
@@ -51,7 +56,7 @@ module.exports = {
       }
     });
 
-    saveAutoroles(autoroles);
+    await saveAutoroles(autoroles);
 
     message.reply(`Roles automáticos para ${type === 'user' ? 'usuarios' : 'bots'} actualizados.`);
   },
@@ -79,7 +84,7 @@ module.exports = {
     const rolesInput = interaction.options.getString('roles');
     const roleIds = rolesInput.split(',').map(id => id.trim());
 
-    const autoroles = getAutoroles();
+    const autoroles = await getAutoroles();
     if (!autoroles[interaction.guild.id] || !autoroles[interaction.guild.id][type]) {
       return interaction.reply(`No hay roles automáticos configurados para ${type === 'user' ? 'usuarios' : 'bots'}.`);
     }
@@ -91,7 +96,7 @@ module.exports = {
       }
     });
 
-    saveAutoroles(autoroles);
+    await saveAutoroles(autoroles);
 
     interaction.reply(`Roles automáticos para ${type === 'user' ? 'usuarios' : 'bots'} actualizados.`);
   },

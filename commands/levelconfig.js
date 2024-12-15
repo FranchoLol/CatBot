@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder, PermissionFlagsBits } = require('discord.js');
-const { getLevelConfig, saveLevelConfig, getLimitedChannels, getLimitedRoles } = require('../../utils/experienceUtils');
+const { getLevelConfig, saveLevelConfig, getLimitedChannels, getLimitedRoles } = require('../utils/experienceUtils');
 
 module.exports = {
   name: 'levelconfig',

@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { PermissionFlagsBits } = require('discord.js');
-const { addLimitedRole, getLimitedRoles } = require('../../utils/experienceUtils');
+const { addLimitedRole, getLimitedRoles } = require('../utils/experienceUtils');
 
 module.exports = {
   name: 'levellimitrole',

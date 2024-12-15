@@ -1,15 +1,20 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder } = require('discord.js');
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
 
-const autoroleFile = path.join(__dirname, '..', '..', 'data', 'autoroles.json');
+const autoroleFile = path.join(__dirname, '..', 'data', 'autoroles.json');
 
-function getAutoroles() {
-  if (!fs.existsSync(autoroleFile)) {
-    return {};
+async function getAutoroles() {
+  try {
+    const data = await fs.readFile(autoroleFile, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return {};
+    }
+    throw error;
   }
-  return JSON.parse(fs.readFileSync(autoroleFile, 'utf8'));
 }
 
 module.exports = {
@@ -17,15 +22,15 @@ module.exports = {
   description: 'Muestra la lista de roles automáticos para usuarios y bots',
   usage: 'c!autorolelist',
   run: async (client, message, args) => {
-    const autoroles = getAutoroles();
+    const autoroles = await getAutoroles();
     const guildAutoroles = autoroles[message.guild.id] || { user: [], bot: [] };
 
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
       .setTitle('Roles Automáticos')
       .addFields(
-        { name: 'Usuarios', value: formatRoleList(message.guild, guildAutoroles.user) },
-        { name: 'Bots', value: formatRoleList(message.guild, guildAutoroles.bot) }
+        { name: 'Usuarios', value: formatRoleList(message.guild, guildAutoroles.user) || 'No hay roles automáticos configurados.' },
+        { name: 'Bots', value: formatRoleList(message.guild, guildAutoroles.bot) || 'No hay roles automáticos configurados.' }
       )
       .setTimestamp();
 
@@ -35,15 +40,15 @@ module.exports = {
     .setName('autorolelist')
     .setDescription('Muestra la lista de roles automáticos para usuarios y bots'),
   async execute(interaction) {
-    const autoroles = getAutoroles();
+    const autoroles = await getAutoroles();
     const guildAutoroles = autoroles[interaction.guild.id] || { user: [], bot: [] };
 
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
       .setTitle('Roles Automáticos')
       .addFields(
-        { name: 'Usuarios', value: formatRoleList(interaction.guild, guildAutoroles.user) },
-        { name: 'Bots', value: formatRoleList(interaction.guild, guildAutoroles.bot) }
+        { name: 'Usuarios', value: formatRoleList(interaction.guild, guildAutoroles.user) || 'No hay roles automáticos configurados.' },
+        { name: 'Bots', value: formatRoleList(interaction.guild, guildAutoroles.bot) || 'No hay roles automáticos configurados.' }
       )
       .setTimestamp();
 
@@ -53,12 +58,12 @@ module.exports = {
 
 function formatRoleList(guild, roleIds) {
   if (roleIds.length === 0) {
-    return 'No hay roles automáticos configurados.';
+    return null;
   }
 
   return roleIds.map(roleId => {
     const role = guild.roles.cache.get(roleId);
-    return role ? `- ${role.name} (${roleId})` : `- Rol desconocido (${roleId})`;
+    return role ? `@${role.name} (${roleId})` : `Rol desconocido (${roleId})`;
   }).join('\n');
 }
 

@@ -1,5 +1,5 @@
-import { EmbedBuilder } from 'discord.js';
-import { SlashCommandBuilder } from '@discordjs/builders';
+const { EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder } = require('@discordjs/builders');
 
 const colorOptions = [
 'Rojo', 'Azul', 'Verde', 'Amarillo', 'Naranja', 'Morado', 'Rosa', 'Negro', 'Blanco', 'Gris',
@@ -14,6 +14,9 @@ const commands = [
       { name: 'ban', description: 'Banea a un usuario del servidor', adminOnly: true },
       { name: 'banip', description: 'Banea la IP de un usuario del servidor', adminOnly: true },
       { name: 'clear', description: 'Elimina una cantidad específica de mensajes', adminOnly: true },
+      { name: 'createrole', description: 'Crea un nuevo rol', adminOnly: true },
+      { name: 'createchannel', description: 'Crea un nuevo canal', adminOnly: true },
+      { name: 'movechannel', description: 'Mueve un canal a una categoría o posición', adminOnly: true },
       { name: 'warn', description: 'Advierte a un usuario', adminOnly: true },
       { name: 'delwarn', description: 'Elimina una advertencia de un usuario', adminOnly: true },
       { name: 'warnconfig', description: 'Muestra la configuración del sistema de advertencias', adminOnly: true },
@@ -28,7 +31,7 @@ const commands = [
       { name: 'serverinfo', description: 'Muestra información sobre el servidor' },
       { name: 'botinfo', description: 'Muestra información sobre el bot' },
       { name: 'roleinfo', description: 'Muestra información sobre un rol' },
-      { name: 'help', description: 'Muestra la lista de comandos disponibles' },
+      { name: 'id', description: 'Muestra el ID de un usuario, canal, rol o emoji' },
       { name: 'bans', description: 'Muestra una lista de los usuarios baneados', adminOnly: true },
       { name: 'warns', description: 'Muestra las advertencias de un usuario', adminOnly: true },
     ]
@@ -42,11 +45,8 @@ const commands = [
       { name: 'avatar', description: 'Muestra el avatar de un usuario' },
       { name: 'jumbo', description: 'Muestra una versión ampliada de un emoji' },
       { name: 'calc', description: 'Realiza cálculos matemáticos simples' },
-      { name: 'google', description: 'Realiza una búsqueda en Google' },
-      { name: 'createrole', description: 'Crea un nuevo rol', adminOnly: true },
-      { name: 'createchannel', description: 'Crea un nuevo canal', adminOnly: true },
-      { name: 'createcategory', description: 'Crea una nueva categoría', adminOnly: true },
-      { name: 'movechannel', description: 'Mueve un canal a una categoría o posición', adminOnly: true },
+      { name: 'invite', description: 'Muestra el enlace de invitación del bot' },
+      { name: 'support', description: 'Muestra información sobre el servidor de soporte' },
       { name: 'assignrole', description: 'Asigna uno o varios roles a un usuario', adminOnly: true },
     ]
   },
@@ -56,6 +56,12 @@ const commands = [
       { name: 'setprefix', description: 'Cambia el prefijo del bot para este servidor', adminOnly: true },
       { name: 'setlanguage', description: 'Cambia el idioma del bot para este servidor', adminOnly: true },
       { name: 'delprefix', description: 'Elimina el prefijo personalizado del servidor', adminOnly: true },
+    ]
+  },
+  {
+    category: '🔍 Búsqueda',
+    commands: [
+      { name: 'google', description: 'Realiza una búsqueda en Google' },
     ]
   },
   {
@@ -88,123 +94,109 @@ const commands = [
   {
     category: '🤖 Bot',
     commands: [
-      { name: 'invite', description: 'Muestra el enlace de invitación del bot' },
-      { name: 'support', description: 'Muestra información sobre el servidor de soporte' },
+      { name: 'help', description: 'Muestra la lista de comandos disponibles' },
       { name: 'donate', description: 'Muestra información sobre cómo donar al bot' },
-    ]
-  },
-  {
-    category: '🔗 KinshipDev',
-    commands: [
       { name: 'kinshipdev', description: 'Muestra información sobre KinshipDev' },
-    ]
-  },
-  {
-    category: '🔄 Autoroles',
-    commands: [
-      { name: 'autoroleadd', description: 'Añade roles automáticos para usuarios o bots', adminOnly: true },
-      { name: 'autoroleremove', description: 'Elimina roles automáticos para usuarios o bots', adminOnly: true },
-      { name: 'autorolelist', description: 'Muestra la lista de roles automáticos para usuarios y bots' },
     ]
   },
 ];
 
-export default {
-name: 'help',
-description: 'Muestra la lista de comandos disponibles',
-usage: 'k!help [comando]',
-run: async (client, message, args) => {
-  const prefix = client.config.prefix;
+module.exports = {
+  name: 'help',
+  description: 'Muestra la lista de comandos disponibles',
+  usage: 'k!help [comando]',
+  run: async (client, message, args) => {
+    const prefix = client.config.prefix;
 
-  if (args[0]) {
-    const commandName = args[0].toLowerCase();
-    const command = commands.flatMap(category => category.commands).find(cmd => cmd.name === commandName);
-    if (!command) {
-      return message.reply('No se encontró ese comando.');
+    if (args[0]) {
+      const commandName = args[0].toLowerCase();
+      const command = commands.flatMap(category => category.commands).find(cmd => cmd.name === commandName);
+      if (!command) {
+        return message.reply('No se encontró ese comando.');
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor('#0099ff')
+        .setTitle(`Comando: ${command.name}`)
+        .addFields(
+          { name: 'Descripción', value: command.description },
+          { name: 'Uso', value: `\`${prefix}${command.name}\`` }
+        );
+
+      if (command.adminOnly) {
+        embed.addFields({ name: 'Permisos', value: '👑 Este comando requiere permisos de administrador.' });
+      }
+
+      return message.reply({ embeds: [embed] });
     }
 
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
-      .setTitle(`Comando: ${command.name}`)
-      .addFields(
-        { name: 'Descripción', value: command.description },
-        { name: 'Uso', value: `\`${prefix}${command.name}\`` }
-      );
+      .setTitle('Comandos Disponibles')
+      .setDescription(`Usa \`${prefix}help [comando]\` para obtener más información sobre un comando específico.`);
 
-    if (command.adminOnly) {
-      embed.addFields({ name: 'Permisos', value: '👑 Este comando requiere permisos de administrador.' });
-    }
-
-    return message.reply({ embeds: [embed] });
-  }
-
-  const embed = new EmbedBuilder()
-    .setColor('#0099ff')
-    .setTitle('Comandos Disponibles')
-    .setDescription(`Usa \`${prefix}help [comando]\` para obtener más información sobre un comando específico.`);
-
-  commands.forEach(category => {
-    embed.addFields({
-      name: category.category,
-      value: category.commands.map(cmd => `${cmd.adminOnly ? '👑 ' : ''}\`${cmd.name}\``).join(', ')
+    commands.forEach(category => {
+      embed.addFields({
+        name: category.category,
+        value: category.commands.map(cmd => `${cmd.adminOnly ? '👑 ' : ''}\`${cmd.name}\``).join(', ')
+      });
     });
-  });
 
-  embed.setFooter({ text: `Total de comandos: ${commands.flatMap(category => category.commands).length}` })
-    .setTimestamp();
+    embed.setFooter({ text: `Total de comandos: ${commands.flatMap(category => category.commands).length}` })
+      .setTimestamp();
 
-  await message.reply({ embeds: [embed] });
-},
-data: new SlashCommandBuilder()
-  .setName('help')
-  .setDescription('Muestra la lista de comandos disponibles')
-  .addStringOption(option =>
-    option.setName('comando')
-      .setDescription('Nombre del comando para obtener información detallada')
-      .setRequired(false)),
-async execute(interaction) {
-  const prefix = interaction.client.config.prefix;
-  const commandName = interaction.options.getString('comando');
+    await message.reply({ embeds: [embed] });
+  },
+  data: new SlashCommandBuilder()
+    .setName('help')
+    .setDescription('Muestra la lista de comandos disponibles')
+    .addStringOption(option =>
+      option.setName('comando')
+        .setDescription('Nombre del comando para obtener información detallada')
+        .setRequired(false)),
+  async execute(interaction) {
+    const prefix = interaction.client.config.prefix;
+    const commandName = interaction.options.getString('comando');
 
-  if (commandName) {
-    const command = interaction.client.commands.get(commandName.toLowerCase());
-    if (!command) {
-      return interaction.reply({ content: 'No se encontró ese comando.', ephemeral: true });
+    if (commandName) {
+      const command = interaction.client.commands.get(commandName.toLowerCase());
+      if (!command) {
+        return interaction.reply({ content: 'No se encontró ese comando.', ephemeral: true });
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor('#0099ff')
+        .setTitle(`Comando: ${command.name}`)
+        .addFields(
+          { name: 'Descripción', value: command.description || 'No hay descripción disponible.' },
+          { name: 'Uso', value: command.usage ? `\`${prefix}${command.usage}\`` : `\`${prefix}${command.name}\`` }
+        );
+
+      if (command.name === 'embed' || command.name === 'createrole') {
+        embed.addFields(
+          { name: 'Opciones de color', value: 'Puedes usar:\n- Código hexadecimal: #ff0000\n- Nombre del color: ' + colorOptions.join(', ') }
+        );
+      }
+
+      return interaction.reply({ embeds: [embed] });
     }
 
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
-      .setTitle(`Comando: ${command.name}`)
-      .addFields(
-        { name: 'Descripción', value: command.description || 'No hay descripción disponible.' },
-        { name: 'Uso', value: command.usage ? `\`${prefix}${command.usage}\`` : `\`${prefix}${command.name}\`` }
-      );
+      .setTitle('Comandos Disponibles')
+      .setDescription(`Usa \`/help comando:[nombre del comando]\` para obtener más información sobre un comando específico.`);
 
-    if (command.name === 'embed' || command.name === 'createrole') {
-      embed.addFields(
-        { name: 'Opciones de color', value: 'Puedes usar:\n- Código hexadecimal: #ff0000\n- Nombre del color: ' + colorOptions.join(', ') }
-      );
-    }
-
-    return interaction.reply({ embeds: [embed] });
-  }
-
-  const embed = new EmbedBuilder()
-    .setColor('#0099ff')
-    .setTitle('Comandos Disponibles')
-    .setDescription(`Usa \`/help comando:[nombre del comando]\` para obtener más información sobre un comando específico.`);
-
-  commands.forEach(category => {
-    embed.addFields({
-      name: category.category,
-      value: category.commands.map(cmd => `${cmd.adminOnly ? '👑 ' : ''}\`${cmd.name}\``).join(', ')
+    commands.forEach(category => {
+      embed.addFields({
+        name: category.category,
+        value: category.commands.map(cmd => `${cmd.adminOnly ? '👑 ' : ''}\`${cmd.name}\``).join(', ')
+      });
     });
-  });
 
-  embed.setFooter({ text: `Total de comandos: ${commands.flatMap(category => category.commands).length}` })
-    .setTimestamp();
+    embed.setFooter({ text: `Total de comandos: ${commands.flatMap(category => category.commands).length}` })
+      .setTimestamp();
 
-  await interaction.reply({ embeds: [embed] });
-},
+    await interaction.reply({ embeds: [embed] });
+  },
 };
 

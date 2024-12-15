@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { getUserExperience, getXpForNextLevel } = require('../../utils/experienceUtils');
+const { getUserExperience, getXpForNextLevel } = require('../utils/experienceUtils');
 
 module.exports = {
   name: 'level',

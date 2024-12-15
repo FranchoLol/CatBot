@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { PermissionFlagsBits } = require('discord.js');
-const { removeLimitedChannel, getLimitedChannels } = require('../../utils/experienceUtils');
+const { removeLimitedChannel, getLimitedChannels } = require('../utils/experienceUtils');
 
 module.exports = {
   name: 'levelrestorechannel',

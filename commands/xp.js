@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder } = require('discord.js');
-const { canUseXpCommand, useXpCommand, getRemainingCooldown } = require('../../utils/experienceUtils');
+const { canUseXpCommand, useXpCommand, getRemainingCooldown } = require('../utils/experienceUtils');
 
 module.exports = {
   name: 'xp',

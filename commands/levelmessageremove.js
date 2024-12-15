@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { PermissionFlagsBits } = require('discord.js');
-const { removeLevelMessageConfig } = require('../../utils/experienceUtils');
+const { removeLevelMessageConfig } = require('../utils/experienceUtils');
 
 module.exports = {
   name: 'levelmessageremove',

@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { PermissionFlagsBits, EmbedBuilder } = require('discord.js');
-const { setLevelChannelConfig, getLevelChannelConfig } = require('../../utils/experienceUtils');
+const { setLevelChannelConfig, getLevelChannelConfig } = require('../utils/experienceUtils');
 
 module.exports = {
   name: 'levelmessage',

@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { getTopUsers } = require('../../utils/experienceUtils');
+const { getTopUsers } = require('../utils/experienceUtils');
 
 module.exports = {
   name: 'top',
