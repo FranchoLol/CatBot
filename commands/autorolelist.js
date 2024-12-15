@@ -63,7 +63,7 @@ function formatRoleList(guild, roleIds) {
 
   return roleIds.map(roleId => {
     const role = guild.roles.cache.get(roleId);
-    return role ? `@${role.name} (${roleId})` : `Rol desconocido (${roleId})`;
+    return role ? `<@&${role.id}> (${roleId})` : `Rol desconocido (${roleId})`;
   }).join('\n');
 }
 
