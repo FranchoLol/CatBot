@@ -3,6 +3,23 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 const moment = require('moment');
 moment.locale('es');
 
+function formatDuration(duration) {
+  const years = duration.years();
+  const months = duration.months();
+  const days = duration.days();
+  const hours = duration.hours();
+
+  if (years > 0) {
+    return `${years} años, ${months} meses`;
+  } else if (months > 0) {
+    return `${months} meses, ${days} días`;
+  } else if (days > 0) {
+    return `${days} días, ${hours} horas`;
+  } else {
+    return `${hours} horas`;
+  }
+}
+
 module.exports = {
   name: 'userinfo',
   description: 'Muestra información detallada sobre un usuario',
@@ -20,22 +37,24 @@ module.exports = {
     }
 
     const member = message.guild.members.cache.get(user.id);
-    const accountAge = moment(user.createdAt).fromNow(true);
-    const joinedAt = member ? moment(member.joinedAt).fromNow(true) : 'No está en el servidor';
+    const accountAge = moment.duration(moment().diff(user.createdAt));
+    const joinedAt = member ? moment.duration(moment().diff(member.joinedAt)) : null;
 
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
-      .setTitle(`Información de Usuario: ${user.tag}`)
+      .setTitle(`Información de Usuario`)
+      .setDescription(`**User | Apodo | ID**
+${user} | ${member?.nickname || 'Ninguno'} | ${user.id}
+
+**Cuenta creada | Se unió al servidor**
+${user.createdAt.toLocaleString()} (${formatDuration(accountAge)}) | ${member ? `${member.joinedAt.toLocaleString()} (${formatDuration(joinedAt)})` : 'No está en el servidor'}
+
+**Bot | 2FA | Insignias**
+${user.bot ? 'Sí' : 'No'} | ${member?.user.mfaEnabled ? 'Sí' : 'No'} | ${user.flags ? user.flags.toArray().map(flag => `\`${flag}\``).join(', ') || 'Ninguna' : 'Ninguna'}
+
+**Roles**
+${member ? member.roles.cache.filter(r => r.id !== message.guild.id).sort((a, b) => b.position - a.position).map(r => `<@&${r.id}>`).join(' ') || 'Ninguno' : 'No está en el servidor'}`)
       .setThumbnail(user.displayAvatarURL({ dynamic: true, size: 256 }))
-      .addFields(
-        { name: 'ID', value: user.id, inline: true },
-        { name: 'Apodo', value: member?.nickname || 'Ninguno', inline: true },
-        { name: 'Cuenta creada', value: `${user.createdAt.toLocaleDateString()} (${accountAge})`, inline: true },
-        { name: 'Se unió al servidor', value: member ? `${member.joinedAt.toLocaleDateString()} (${joinedAt})` : 'No está en el servidor', inline: true },
-        { name: 'Roles', value: member ? (member.roles.cache.size > 1 ? member.roles.cache.map(role => role.name).join(', ') : 'Ninguno') : 'No está en el servidor' },
-        { name: 'Es bot', value: user.bot ? 'Sí' : 'No', inline: true },
-        { name: 'Insignias', value: user.flags ? user.flags.toArray().join(', ') || 'Ninguna' : 'Ninguna', inline: true }
-      )
       .setTimestamp();
 
     await message.reply({ embeds: [embed] });
@@ -50,22 +69,24 @@ module.exports = {
   async execute(interaction) {
     const user = interaction.options.getUser('usuario') || interaction.user;
     const member = interaction.guild.members.cache.get(user.id);
-    const accountAge = moment(user.createdAt).fromNow(true);
-    const joinedAt = member ? moment(member.joinedAt).fromNow(true) : 'No está en el servidor';
+    const accountAge = moment.duration(moment().diff(user.createdAt));
+    const joinedAt = member ? moment.duration(moment().diff(member.joinedAt)) : null;
 
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
-      .setTitle(`Información de Usuario: ${user.tag}`)
+      .setTitle(`Información de Usuario`)
+      .setDescription(`**User | Apodo | ID**
+${user} | ${member?.nickname || 'Ninguno'} | ${user.id}
+
+**Cuenta creada | Se unió al servidor**
+${user.createdAt.toLocaleString()} (${formatDuration(accountAge)}) | ${member ? `${member.joinedAt.toLocaleString()} (${formatDuration(joinedAt)})` : 'No está en el servidor'}
+
+**Bot | 2FA | Insignias**
+${user.bot ? 'Sí' : 'No'} | ${member?.user.mfaEnabled ? 'Sí' : 'No'} | ${user.flags ? user.flags.toArray().map(flag => `\`${flag}\``).join(', ') || 'Ninguna' : 'Ninguna'}
+
+**Roles**
+${member ? member.roles.cache.filter(r => r.id !== interaction.guild.id).sort((a, b) => b.position - a.position).map(r => `<@&${r.id}>`).join(' ') || 'Ninguno' : 'No está en el servidor'}`)
       .setThumbnail(user.displayAvatarURL({ dynamic: true, size: 256 }))
-      .addFields(
-        { name: 'ID', value: user.id, inline: true },
-        { name: 'Apodo', value: member?.nickname || 'Ninguno', inline: true },
-        { name: 'Cuenta creada', value: `${user.createdAt.toLocaleDateString()} (${accountAge})`, inline: true },
-        { name: 'Se unió al servidor', value: member ? `${member.joinedAt.toLocaleDateString()} (${joinedAt})` : 'No está en el servidor', inline: true },
-        { name: 'Roles', value: member ? (member.roles.cache.size > 1 ? member.roles.cache.map(role => role.name).join(', ') : 'Ninguno') : 'No está en el servidor' },
-        { name: 'Es bot', value: user.bot ? 'Sí' : 'No', inline: true },
-        { name: 'Insignias', value: user.flags ? user.flags.toArray().join(', ') || 'Ninguna' : 'Ninguna', inline: true }
-      )
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });
