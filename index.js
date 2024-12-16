@@ -11,6 +11,7 @@ const {
 const fs = require('fs');
 const path = require('path');
 const colors = require('colors/safe');
+const { handleNavigationButton } = require('./utils/button_handler');
 
 const client = new Client({
   intents: [
@@ -106,18 +107,26 @@ client.once('ready', () => {
 });
 
 client.on('interactionCreate', async interaction => {
-  if (!interaction.isCommand()) return;
+  if (interaction.isButton()) {
+    handleNavigationButton(interaction);
+    return;
+  }
 
-  const command = client.slashCommands.get(interaction.commandName);
-  if (!command) return;
+  if (interaction.isChatInputCommand()) {
+    const command = client.slashCommands.get(interaction.commandName);
+    if (!command) return;
 
-  const language = getLanguage(interaction.guildId);
+    const language = getLanguage(interaction.guildId);
 
-  try {
-    await command.execute(interaction, language);
-  } catch (error) {
-    console.error(error);
-    await interaction.reply({ content: 'Hubo un error al ejecutar este comando!', ephemeral: true });
+    try {
+      await command.execute(interaction, language);
+    } catch (error) {
+      console.error(error);
+      await interaction.reply({ 
+        content: 'Hubo un error al ejecutar este comando.', 
+        ephemeral: true 
+      });
+    }
   }
 });
 

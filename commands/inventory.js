@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder } = require('discord.js');
 const { getUserData, formatNumber, calculateStorageUsed, calculateTotalStorage, gameConfig } = require('../utils/helpers');
+const { createNavigationRow } = require('../utils/button_handler');
 
 module.exports = {
   name: 'inventory',
@@ -9,9 +10,11 @@ module.exports = {
   run: async (client, message, args) => {
     const target = message.mentions.users.first() || message.author;
     const userData = getUserData(target.id);
-
     const embed = createInventoryEmbed(target, userData);
-    message.reply({ embeds: [embed] });
+    message.reply({ 
+      embeds: [embed],
+      components: [createNavigationRow()]
+    });
   },
   data: new SlashCommandBuilder()
     .setName('inventory')
@@ -23,9 +26,11 @@ module.exports = {
   async execute(interaction) {
     const target = interaction.options.getUser('usuario') || interaction.user;
     const userData = getUserData(target.id);
-
     const embed = createInventoryEmbed(target, userData);
-    interaction.reply({ embeds: [embed] });
+    interaction.reply({ 
+      embeds: [embed],
+      components: [createNavigationRow()]
+    });
   },
 };
 
@@ -36,33 +41,41 @@ function createInventoryEmbed(user, userData) {
     return sum + lines * langConfig.exchangeRate;
   }, 0);
 
-  const languagesText = Object.entries(userData.languages)
-    .map(([lang, lines]) => {
-      const langConfig = gameConfig.languages.find(l => l.name === lang);
-      return `${lang} - ${formatNumber(lines)} líneas (${formatNumber(lines * gameConfig.bytesPerLine)} bytes) - U$S ${formatNumber(lines * langConfig.exchangeRate)}`;
-    })
-    .join('\n');
-
   const storageUsed = calculateStorageUsed(userData);
   const totalStorage = calculateTotalStorage(userData);
 
   const nextLevelConfig = gameConfig.levels.find(l => l.level > userData.level);
   const xpToNextLevel = nextLevelConfig ? nextLevelConfig.xpRequired - userData.xp : 'Max';
 
-  return new EmbedBuilder()
+  const embed = new EmbedBuilder()
     .setColor('#0099ff')
     .setTitle(`Developer ${user.tag}`)
     .setDescription(`Level ${userData.level}, ${formatNumber(userData.xp)} XP (${formatNumber(xpToNextLevel)} para el siguiente nivel)
 Balance: U$S ${formatNumber(userData.balance)}
 Booster: ${userData.performanceBoost > 1 ? `${((userData.performanceBoost - 1) * 100).toFixed(0)}% ☕` : 'none'}
 
-Almacenamiento: ${formatNumber(storageUsed)}/${formatNumber(totalStorage)} bytes
-
-Explorador de proyectos:
-${languagesText}
+Almacenamiento: ${formatNumber(storageUsed)}/${formatNumber(totalStorage)} bytes ${storageUsed >= totalStorage ? '(LLENO)' : ''}
 
 Dinero en líneas: U$S ${formatNumber(moneyInLines)}
 Líneas de código totales: ${formatNumber(totalLines)}`)
     .setFooter({ text: 'Usa los comandos: design, shopgamer, setup, sellcode' });
+
+  Object.entries(userData.languages).forEach(([lang, lines]) => {
+    const langConfig = gameConfig.languages.find(l => l.name === lang);
+    embed.addFields({
+      name: lang,
+      value: `${formatNumber(lines)} líneas (${formatNumber(lines * gameConfig.bytesPerLine)} bytes) - U$S ${formatNumber(lines * langConfig.exchangeRate)}`,
+      inline: true
+    });
+  });
+
+  if (storageUsed >= totalStorage) {
+    embed.addFields({
+      name: '⚠️ ALMACENAMIENTO LLENO',
+      value: 'No puedes generar más líneas de código. Considera vender código o aumentar tu almacenamiento.'
+    });
+  }
+
+  return embed;
 }
 

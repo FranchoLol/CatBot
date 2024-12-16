@@ -1,5 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { getUserData, saveUserData, formatNumber, calculateStorageUsed, calculateTotalStorage, getUnlockedLanguages, generateLines, levelUp, calculateXP } = require('../utils/helpers');
+const { EmbedBuilder } = require('discord.js');
+const { getUserData, saveUserData, formatNumber, calculateStorageUsed, calculateTotalStorage, getUnlockedLanguages, generateLines, levelUp, calculateXP, createLevelUpEmbed } = require('../utils/helpers');
+const { createNavigationRow } = require('../utils/button_handler');
 
 const DESIGN_COOLDOWN = 2200; // 2.2 segundos en milisegundos
 const userCooldowns = new Map();
@@ -21,8 +23,11 @@ module.exports = {
     }
 
     userCooldowns.set(userId, now);
-    const result = executeDesign(userId, args[0]);
-    message.reply(result);
+    const result = await executeDesign(userId, args[0]);
+    if (result.levelUp) {
+      await message.channel.send({ embeds: [result.levelUpEmbed] });
+    }
+    message.reply({ embeds: [result.embed], components: [createNavigationRow()] });
   },
   data: new SlashCommandBuilder()
     .setName('design')
@@ -44,12 +49,15 @@ module.exports = {
     }
 
     userCooldowns.set(userId, now);
-    const result = executeDesign(userId, interaction.options.getString('lenguaje'));
-    interaction.reply(result);
+    const result = await executeDesign(userId, interaction.options.getString('lenguaje'));
+    if (result.levelUp) {
+      await interaction.channel.send({ embeds: [result.levelUpEmbed] });
+    }
+    interaction.reply({ embeds: [result.embed], components: [createNavigationRow()] });
   },
 };
 
-function executeDesign(userId, selectedLanguage) {
+async function executeDesign(userId, selectedLanguage) {
   const userData = getUserData(userId);
   const unlockedLanguages = getUnlockedLanguages(userData.level);
 
@@ -62,7 +70,15 @@ function executeDesign(userId, selectedLanguage) {
   const currentStorage = calculateStorageUsed(userData);
   const totalStorage = calculateTotalStorage(userData);
   if (currentStorage + linesGenerated > totalStorage) {
-    return `No tienes suficiente almacenamiento. Almacenamiento actual: ${formatNumber(currentStorage)}/${formatNumber(totalStorage)} bytes.`;
+    return {
+      embed: new EmbedBuilder()
+        .setColor('#FF0000')
+        .setTitle('❌ Almacenamiento Lleno')
+        .setDescription('No tienes suficiente almacenamiento para guardar más líneas de código.')
+        .addFields(
+          { name: 'Almacenamiento Actual', value: `${formatNumber(currentStorage)}/${formatNumber(totalStorage)} bytes`, inline: true }
+        )
+    };
   }
 
   userData.languages[language] += linesGenerated;
@@ -74,22 +90,42 @@ function executeDesign(userId, selectedLanguage) {
   // Verificar si el usuario subió de nivel
   let leveledUp = false;
   let newLevel = userData.level;
+  let moneyReward = 0;
   while (levelUp(userData)) {
     leveledUp = true;
     newLevel = userData.level;
+    const levelConfig = gameConfig.levels.find(l => l.level === newLevel);
+    moneyReward += levelConfig.moneyReward;
   }
 
   saveUserData({ [userId]: userData });
 
-  let response = `Has generado ${formatNumber(linesGenerated)} líneas de código en ${language}. Total: ${formatNumber(userData.languages[language])} líneas. Has ganado ${formatNumber(xpGained)} XP.`;
+  const embed = new EmbedBuilder()
+    .setColor('#00FF00')
+    .setTitle('💻 Diseño de Código')
+    .setDescription(`Has generado código en ${language}`)
+    .addFields(
+      { name: 'Líneas Generadas', value: formatNumber(linesGenerated), inline: true },
+      { name: 'Total de Líneas', value: formatNumber(userData.languages[language]), inline: true },
+      { name: '\u200B', value: '\u200B' },
+      { name: 'XP Ganada', value: formatNumber(xpGained), inline: true },
+      { name: 'XP Total', value: formatNumber(userData.xp), inline: true }
+    )
+    .setFooter({ text: `Almacenamiento: ${formatNumber(currentStorage + linesGenerated)}/${formatNumber(totalStorage)} bytes` });
+
+  Object.entries(userData.languages).forEach(([lang, lines]) => {
+    embed.addFields({ name: lang, value: formatNumber(lines), inline: true });
+  });
+
+  let levelUpEmbed;
   if (leveledUp) {
-    response += ` ¡Has subido al nivel ${newLevel}!`;
-    const newLanguages = getUnlockedLanguages(newLevel).filter(lang => !Object.keys(userData.languages).includes(lang));
-    if (newLanguages.length > 0) {
-      response += ` Has desbloqueado ${newLanguages.join(', ')}.`;
-    }
+    levelUpEmbed = createLevelUpEmbed({ id: userId }, newLevel, moneyReward);
   }
 
-  return response;
+  return {
+    embed,
+    levelUp: leveledUp,
+    levelUpEmbed
+  };
 }
 

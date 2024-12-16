@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { EmbedBuilder } = require('discord.js');
 
 const dataPath = path.join(__dirname, '..', 'data', 'users.json');
 const configPath = path.join(__dirname, '..', 'data', 'game_config.json');
@@ -94,6 +95,19 @@ function calculateXP(level, linesGenerated) {
   return Math.floor(gameConfig.baseXP * linesGenerated * levelConfig.xpMultiplier);
 }
 
+function createLevelUpEmbed(user, newLevel, moneyReward) {
+  return new EmbedBuilder()
+    .setColor('#FFD700')
+    .setTitle('🎉 ¡SUBIDA DE NIVEL! 🎉')
+    .setDescription(`¡Felicidades, <@${user.id}>! Has alcanzado el nivel **${newLevel}**`)
+    .addFields(
+      { name: '💰 Recompensa', value: `U$S ${formatNumber(moneyReward)}`, inline: true },
+      { name: '🆙 Nuevo Nivel', value: `${newLevel}`, inline: true }
+    )
+    .setFooter({ text: 'Sigue programando para desbloquear más lenguajes y características' })
+    .setTimestamp();
+}
+
 module.exports = {
   getUserData,
   saveUserData,
@@ -105,6 +119,7 @@ module.exports = {
   gameConfig,
   getUnlockedLanguages,
   generateLines,
-  calculateXP
+  calculateXP,
+  createLevelUpEmbed,
 };
 
