@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder } = require('discord.js');
-const { getUserData, saveUserData, formatNumber, calculateStorageUsed, calculateTotalStorage, getUnlockedLanguages, generateLines, levelUp, calculateXP, createLevelUpEmbed } = require('../utils/helpers');
+const { getUserData, saveUserData, formatNumber, calculateStorageUsed, calculateTotalStorage, getUnlockedLanguages, generateLines, levelUp, calculateXP, createLevelUpEmbed, gameConfig } = require('../utils/helpers');
 const { createNavigationRow } = require('../utils/button_handler');
 
 const DESIGN_COOLDOWN = 2200; // 2.2 segundos en milisegundos
@@ -94,7 +94,7 @@ async function executeDesign(userId, selectedLanguage) {
   while (levelUp(userData)) {
     leveledUp = true;
     newLevel = userData.level;
-    const levelConfig = gameConfig.levels.find(l => l.level === newLevel);
+    const levelConfig = gameConfig.levels.find(l => l.level === newLevel) || { moneyReward: 0 };
     moneyReward += levelConfig.moneyReward;
   }
 

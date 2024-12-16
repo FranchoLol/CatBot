@@ -37,3 +37,6 @@ data/
 
 # Congelados
 old/
+
+# py autos
+python/
