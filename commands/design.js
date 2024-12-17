@@ -132,17 +132,15 @@ async function executeDesign(userId, selectedLanguage) {
   const embed = new EmbedBuilder()
     .setColor('#00FF00')
     .setTitle('💻 Diseño de Código')
-    .setDescription(`Has generado código en ${Object.keys(generatedLines).length} lenguaje(s)`)
-    .addFields(
-      { name: 'Líneas Generadas', value: formatNumber(totalLinesGenerated), inline: true }
-    )
-    .setFooter({ text: `Almacenamiento: ${formatNumber(currentStorage + totalLinesGenerated)}/${formatNumber(totalStorage)} bytes | Líneas de código totales generadas: ${formatNumber(userData.totalLinesGenerated)}` }); // Modified line
+    //.setDescription(`Has generado código en ${Object.keys(generatedLines).length} lenguaje(s)`)
+    .setDescription(`Líneas Generadas: ${formatNumber(totalLinesGenerated)}`)
+    .setFooter({ text: `Almacenamiento: ${formatNumber(currentStorage + totalLinesGenerated)}/${formatNumber(totalStorage)} bytes | Líneas de código totales generadas: ${formatNumber(userData.totalLinesGenerated)}` });
 
   Object.entries(generatedLines).forEach(([lang, lines]) => {
     embed.addFields({ name: lang, value: `${formatNumber(lines)} líneas`, inline: true });
   });
 
-  embed.addFields({ name: 'XP Ganada', value: formatNumber(xpGained), inline: true });
+  embed.addFields({ name: 'XP Ganada', value: formatNumber(xpGained), inline: false });
 
   let levelUpEmbed;
   if (leveledUp) {

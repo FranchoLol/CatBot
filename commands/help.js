@@ -1,46 +1,111 @@
 const { EmbedBuilder } = require('discord.js');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 
-const categories = [
+const colorOptions = [
+'Rojo', 'Azul', 'Verde', 'Amarillo', 'Naranja', 'Morado', 'Rosa', 'Negro', 'Blanco', 'Gris',
+'Red', 'Blue', 'Green', 'Yellow', 'Orange', 'Purple', 'Pink', 'Black', 'White', 'Gray'
+];
+
+const commands = [
   {
-    name: '🛠️ Moderación',
-    commands: ['kick', 'ban', 'banip', 'unban', 'unbanip', 'mute', 'unmute', 'mutes', 'clear', 'warn', 'warns', 'delwarn', 'slowmode', 'lock', 'unlock']
+    category: '🛠️ Moderación',
+    commands: [
+      { name: 'kick', description: 'Expulsa a un usuario del servidor', adminOnly: true },
+      { name: 'ban', description: 'Banea a un usuario del servidor', adminOnly: true },
+      { name: 'banip', description: 'Banea la IP de un usuario del servidor', adminOnly: true },
+      { name: 'clear', description: 'Elimina una cantidad específica de mensajes', adminOnly: true },
+      { name: 'createrole', description: 'Crea un nuevo rol', adminOnly: true },
+      { name: 'createchannel', description: 'Crea un nuevo canal', adminOnly: true },
+      { name: 'movechannel', description: 'Mueve un canal a una categoría o posición', adminOnly: true },
+      { name: 'warn', description: 'Advierte a un usuario', adminOnly: true },
+      { name: 'delwarn', description: 'Elimina una advertencia de un usuario', adminOnly: true },
+      { name: 'warnconfig', description: 'Muestra la configuración del sistema de advertencias', adminOnly: true },
+      { name: 'warnconfigmax', description: 'Establece el número máximo de advertencias', adminOnly: true },
+      { name: 'warnconfigaction', description: 'Establece la acción al alcanzar el máximo de advertencias', adminOnly: true },
+    ]
   },
   {
-    name: 'ℹ️ Información',
-    commands: ['userinfo', 'serverinfo', 'botinfo', 'roleinfo', 'id', 'bans']
+    category: 'ℹ️ Información',
+    commands: [
+      { name: 'userinfo', description: 'Muestra información sobre un usuario' },
+      { name: 'serverinfo', description: 'Muestra información sobre el servidor' },
+      { name: 'botinfo', description: 'Muestra información sobre el bot' },
+      { name: 'roleinfo', description: 'Muestra información sobre un rol' },
+      { name: 'id', description: 'Muestra el ID de un usuario, canal, rol o emoji' },
+      { name: 'bans', description: 'Muestra una lista de los usuarios baneados', adminOnly: true },
+      { name: 'warns', description: 'Muestra las advertencias de un usuario', adminOnly: true },
+    ]
   },
   {
-    name: '🎭 Utilidad',
-    commands: ['say', 'embed', 'ping', 'avatar', 'jumbo', 'calc', 'invite', 'support', 'emoji', 'gif']
+    category: '🎭 Utilidad',
+    commands: [
+      { name: 'say', description: 'Hace que el bot repita un mensaje' },
+      { name: 'embed', description: 'Crea un mensaje embed personalizado' },
+      { name: 'ping', description: 'Muestra la latencia del bot' },
+      { name: 'avatar', description: 'Muestra el avatar de un usuario' },
+      { name: 'jumbo', description: 'Muestra una versión ampliada de un emoji' },
+      { name: 'calc', description: 'Realiza cálculos matemáticos simples' },
+      { name: 'invite', description: 'Muestra el enlace de invitación del bot' },
+      { name: 'support', description: 'Muestra información sobre el servidor de soporte' },
+      { name: 'assignrole', description: 'Asigna uno o varios roles a un usuario', adminOnly: true },
+    ]
   },
   {
-    name: '⚙️ Configuración',
-    commands: ['setprefix', 'setlanguage', 'delprefix', 'autoroleadd', 'autoroleremove', 'autorolelist']
+    category: '⚙️ Configuración',
+    commands: [
+      { name: 'setprefix', description: 'Cambia el prefijo del bot para este servidor', adminOnly: true },
+      { name: 'setlanguage', description: 'Cambia el idioma del bot para este servidor', adminOnly: true },
+      { name: 'delprefix', description: 'Elimina el prefijo personalizado del servidor', adminOnly: true },
+    ]
   },
   {
-    name: '🔍 Búsqueda',
-    commands: ['google']
+    category: '🔍 Búsqueda',
+    commands: [
+      { name: 'google', description: 'Realiza una búsqueda en Google' },
+    ]
   },
   {
-    name: '😄 Diversión',
-    commands: ['8ball', 'rps', 'love', 'covid', 'impostor', 'intelligence']
+    category: '😄 Diversión',
+    commands: [
+      { name: '8ball', description: 'Pregunta a la bola 8 mágica' },
+    ]
   },
   {
-    name: '🏆 Niveles',
-    commands: ['level', 'top', 'leveladd', 'levelremove', 'levelchannel', 'levelchannelremove', 'levelchannelset', 'levelmessage', 'levelmessageremove', 'levellimitchannel', 'levelrestorechannel', 'levelrestoreall', 'levellimitrole', 'levelrestorerol', 'levelrestoreallroles', 'levelconfig']
+    category: '🏆 Niveles',
+    commands: [
+      { name: 'level', description: 'Muestra el nivel y experiencia de un usuario' },
+      { name: 'top', description: 'Muestra los usuarios con más nivel en el servidor' },
+      { name: 'leveladd', description: 'Añade experiencia o niveles a un usuario', adminOnly: true },
+      { name: 'levelremove', description: 'Quita experiencia o niveles a un usuario', adminOnly: true },
+      { name: 'levelchannel', description: 'Configura el canal y mensaje para los anuncios de subida de nivel', adminOnly: true },
+      { name: 'levelchannelremove', description: 'Elimina la configuración de canal para anuncios de subida de nivel', adminOnly: true },
+      { name: 'levelchannelset', description: 'Establece un nuevo canal para los anuncios de subida de nivel', adminOnly: true },
+      { name: 'levelmessage', description: 'Configura el mensaje para los anuncios de subida de nivel', adminOnly: true },
+      { name: 'levelmessageremove', description: 'Elimina la configuración personalizada de mensajes de nivel', adminOnly: true },
+      { name: 'levellimitchannel', description: 'Limita la ganancia de XP en canales específicos', adminOnly: true },
+      { name: 'levelrestorechannel', description: 'Restaura la ganancia de XP en canales específicos', adminOnly: true },
+      { name: 'levelrestoreall', description: 'Restaura la ganancia de XP en todos los canales', adminOnly: true },
+      { name: 'levellimitrole', description: 'Limita la ganancia de XP para roles específicos', adminOnly: true },
+      { name: 'levelrestorerol', description: 'Restaura la ganancia de XP para roles específicos', adminOnly: true },
+      { name: 'levelrestoreallroles', description: 'Restaura la ganancia de XP para todos los roles', adminOnly: true },
+      { name: 'levelconfig', description: 'Muestra la configuración del sistema de niveles', adminOnly: true },
+    ]
   },
   {
-    name: '🎉 Eventos',
-    commands: ['giveaway']
+    category: '🤖 Bot',
+    commands: [
+      { name: 'help', description: 'Muestra la lista de comandos disponibles' },
+      { name: 'donate', description: 'Muestra información sobre cómo donar al bot' },
+      { name: 'kinshipdev', description: 'Muestra información sobre KinshipDev' },
+    ]
   },
   {
-    name: '👋 Bienvenida y Despedida',
-    commands: ['welcomechannel', 'welcomemessage', 'goodbyechannel', 'goodbyemessage', 'greetingsettings']
-  },
-  {
-    name: '🤖 Bot',
-    commands: ['help', 'donate', 'kinshipdev']
+    category: '🎂 Cumpleaños',
+    commands: [
+      { name: 'setbirthday', description: 'Establece o cambia tu fecha de cumpleaños' },
+      { name: 'setbirthdaychannel', description: 'Establece el canal para los mensajes de cumpleaños', adminOnly: true },
+      { name: 'setbirthdaymessage', description: 'Establece el mensaje de cumpleaños personalizado', adminOnly: true },
+    ]
   },
 ];
 
@@ -53,7 +118,7 @@ module.exports = {
 
     if (args[0]) {
       const commandName = args[0].toLowerCase();
-      const command = client.commands.get(commandName);
+      const command = commands.flatMap(category => category.commands).find(cmd => cmd.name === commandName);
       if (!command) {
         return message.reply('No se encontró ese comando.');
       }
@@ -63,8 +128,12 @@ module.exports = {
         .setTitle(`Comando: ${command.name}`)
         .addFields(
           { name: 'Descripción', value: command.description },
-          { name: 'Uso', value: `\`${command.usage || `${prefix}${command.name}`}\`` }
+          { name: 'Uso', value: `\`${prefix}${command.name}\`` }
         );
+
+      if (command.adminOnly) {
+        embed.addFields({ name: 'Permisos', value: '👑 Este comando requiere permisos de administrador.' });
+      }
 
       return message.reply({ embeds: [embed] });
     }
@@ -74,14 +143,14 @@ module.exports = {
       .setTitle('Comandos Disponibles')
       .setDescription(`Usa \`${prefix}help [comando]\` para obtener más información sobre un comando específico.`);
 
-    categories.forEach(category => {
+    commands.forEach(category => {
       embed.addFields({
-        name: category.name,
-        value: category.commands.map(cmd => `\`${cmd}\``).join(', ')
+        name: category.category,
+        value: category.commands.map(cmd => `${cmd.adminOnly ? '👑 ' : ''}\`${cmd.name}\``).join(', ')
       });
     });
 
-    embed.setFooter({ text: `Total de comandos: ${client.commands.size}` })
+    embed.setFooter({ text: `Total de comandos: ${commands.flatMap(category => category.commands).length}` })
       .setTimestamp();
 
     await message.reply({ embeds: [embed] });
@@ -107,9 +176,15 @@ module.exports = {
         .setColor('#0099ff')
         .setTitle(`Comando: ${command.name}`)
         .addFields(
-          { name: 'Descripción', value: command.description },
-          { name: 'Uso', value: `\`${command.usage || `${prefix}${command.name}`}\`` }
+          { name: 'Descripción', value: command.description || 'No hay descripción disponible.' },
+          { name: 'Uso', value: command.usage ? `\`${prefix}${command.usage}\`` : `\`${prefix}${command.name}\`` }
         );
+
+      if (command.name === 'embed' || command.name === 'createrole') {
+        embed.addFields(
+          { name: 'Opciones de color', value: 'Puedes usar:\n- Código hexadecimal: #ff0000\n- Nombre del color: ' + colorOptions.join(', ') }
+        );
+      }
 
       return interaction.reply({ embeds: [embed] });
     }
@@ -119,14 +194,14 @@ module.exports = {
       .setTitle('Comandos Disponibles')
       .setDescription(`Usa \`/help comando:[nombre del comando]\` para obtener más información sobre un comando específico.`);
 
-    categories.forEach(category => {
+    commands.forEach(category => {
       embed.addFields({
-        name: category.name,
-        value: category.commands.map(cmd => `\`${cmd}\``).join(', ')
+        name: category.category,
+        value: category.commands.map(cmd => `${cmd.adminOnly ? '👑 ' : ''}\`${cmd.name}\``).join(', ')
       });
     });
 
-    embed.setFooter({ text: `Total de comandos: ${interaction.client.commands.size}` })
+    embed.setFooter({ text: `Total de comandos: ${commands.flatMap(category => category.commands).length}` })
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });

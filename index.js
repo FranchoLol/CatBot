@@ -10,8 +10,8 @@ const {
 } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const colors = require('colors/safe');
 const { handleNavigationButton } = require('./utils/button_handler');
+const { getBirthdayChannelConfig, addMessageExperience, getLevelChannelConfig, checkForBirthdays, sendBirthdayMessage } = require('./utils/helpers'); 
 
 const client = new Client({
   intents: [
@@ -20,6 +20,7 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.DirectMessages, 
   ],
   partials: [Partials.Channel],
 });
@@ -70,7 +71,7 @@ function getTotalUsers() {
   return client.guilds.cache.reduce((total, guild) => total + guild.memberCount, 0);
 }
 
-client.once('ready', () => {
+client.once('ready', async () => {
   (async () => {
     const chalk = (await import('chalk')).default;
   
@@ -78,12 +79,7 @@ client.once('ready', () => {
     console.log(chalk.hex('#ffcc00')('┃  ') + chalk.bold.underline('Bot conectado') + chalk.bold(': ') + chalk.hex('#f47fff')(`${client.user.tag}`) + chalk.hex('#ffcc00')('  ┃'));
     console.log(chalk.hex('#ffcc00')('┗' + '━'.repeat(33) + '┛'));
   })();
-  /*
-    ┏┳━┓
-    ┣╋━┫
-    ┃┃┃┃
-    ┗┻━┛
-  */
+  
 
   client.user.setStatus(PresenceUpdateStatus.DoNotDisturb);
 
@@ -95,7 +91,7 @@ client.once('ready', () => {
 
     const activities = [
       { type: ActivityType.Playing, name: `Prefijo: ${client.config.defaultPrefix}` },
-      { type: ActivityType.Watching, name: `**${totalServers} servidores**` },
+      { type: ActivityType.Watching, name: `${totalServers} servidores` },
       { type: ActivityType.Listening, name: `${totalUsers} usuarios` },
     ];
 
@@ -104,7 +100,17 @@ client.once('ready', () => {
 
     activityIndex = (activityIndex + 1) % activities.length;
   }, 10000);
+
+  
+  setInterval(async () => {
+    checkBirthdays(client);
+  }, 60000); 
 });
+
+async function checkBirthdays(client) {
+  const { checkForBirthdays } = require('./utils/helpers');
+  await checkForBirthdays(client);
+}
 
 client.on('interactionCreate', async interaction => {
   if (interaction.isButton()) {
@@ -143,8 +149,6 @@ client.on('messageCreate', async message => {
   try {
     if (!message.guild || message.author.bot) return;
 
-    const { addMessageExperience, getLevelChannelConfig } = require('./utils/experienceUtils');
-    
     const prefix = getPrefix(message.guild.id);
     if (!message.content.toLowerCase().startsWith(prefix.toLowerCase())) {
       const result = addMessageExperience(message.guild.id, message.author.id, message.content.length, message.channel.id);

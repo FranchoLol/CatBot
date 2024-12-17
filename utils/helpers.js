@@ -4,6 +4,8 @@ const { EmbedBuilder } = require('discord.js');
 
 const dataPath = path.join(__dirname, '..', 'data', 'users.json');
 const configPath = path.join(__dirname, '..', 'data', 'game_config.json');
+const birthdayPath = path.join(__dirname, '..', 'data', 'birthdays.json');
+const birthdayConfigPath = path.join(__dirname, '..', 'data', 'birthdayConfig.json');
 
 const gameConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
@@ -146,6 +148,61 @@ function updateActiveLanguages(userData) {
   return userData;
 }
 
+function getBirthdayChannelConfig() {
+  if (!fs.existsSync(birthdayConfigPath)) {
+    return {};
+  }
+
+  return JSON.parse(fs.readFileSync(birthdayConfigPath, 'utf8'));
+}
+
+async function checkForBirthdays(client) {
+  if (!fs.existsSync(birthdayPath)) {
+    return [];
+  }
+
+  const birthdays = JSON.parse(fs.readFileSync(birthdayPath, 'utf8'));
+  const today = new Date();
+  const todayString = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}`;
+
+  const birthdayUsers = birthdays[todayString] || [];
+  const channelConfigs = getBirthdayChannelConfig();
+
+  for (const guildId in channelConfigs) {
+    const guild = await client.guilds.fetch(guildId);
+    const channelId = channelConfigs[guildId].channelId;
+    const channel = await guild.channels.fetch(channelId);
+
+    if (channel) {
+      const guildMembers = await guild.members.fetch();
+      const birthdayMembersInGuild = birthdayUsers.filter(userId => guildMembers.has(userId));
+
+      for (const userId of birthdayMembersInGuild) {
+        const user = await client.users.fetch(userId);
+        sendBirthdayMessage(channel, user);
+      }
+    }
+  }
+}
+
+function sendBirthdayMessage(channel, user) {
+  const embed = new EmbedBuilder()
+    .setColor('#FF69B4')
+    .setTitle('🎉 ¡Feliz Cumpleaños! 🎂')
+    .setDescription(`Hoy es el cumpleaños de ${user}. ¡Felicidades!`)
+    .setTimestamp();
+
+  channel.send({ embeds: [embed] });
+}
+
+function addMessageExperience(guildId, userId, messageLength, channelId) {
+  const xpGained = Math.floor(messageLength / 10); 
+  const userData = getUserData(userId);
+  userData.xp += xpGained;
+  saveUserData({ [userId]: userData });
+  return { leveledUp: levelUp(userData), level: userData.level };
+}
+
 module.exports = {
   getUserData,
   saveUserData,
@@ -161,5 +218,9 @@ module.exports = {
   createLevelUpEmbed,
   getActiveLanguages,
   updateActiveLanguages,
+  getBirthdayChannelConfig,
+  checkForBirthdays,
+  sendBirthdayMessage,
+  addMessageExperience,
 };
 

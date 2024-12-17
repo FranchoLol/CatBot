@@ -60,7 +60,7 @@ Balance: U$S ${formatNumber(userData.balance)}
 Booster: ${userData.performanceBoost > 1 ? `${((userData.performanceBoost - 1) * 100).toFixed(0)}% ☕` : 'none'}
 
 Almacenamiento: ${formatNumber(storageUsed)}/${formatNumber(totalStorage)} bytes ${storageUsed >= totalStorage ? '(LLENO)' : ''}`)
-    .setFooter({ text: `Líneas de código totales generadas: ${formatNumber(userData.totalLinesGenerated || 0)} | Usa los comandos: design, shopgamer, setup, sellcode` });
+    .setFooter({ text: `Líneas de código totales generadas: ${formatNumber(userData.totalLinesGenerated || 0)}` });
 
   const getActiveLanguages = (userData) => {
     return Object.keys(userData.languages).filter(lang => userData.languages[lang] > 0);
