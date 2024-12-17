@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder } = require('discord.js');
-const { getUserData, saveUserData, formatNumber, calculateStorageUsed, calculateTotalStorage, getUnlockedLanguages, generateLines, levelUp, calculateXP, createLevelUpEmbed, gameConfig } = require('../utils/helpers');
+const { getUserData, saveUserData, formatNumber, calculateStorageUsed, calculateTotalStorage, getUnlockedLanguages, generateLines, levelUp, calculateXP, createLevelUpEmbed, gameConfig, getActiveLanguages } = require('../utils/helpers');
 const { createNavigationRow } = require('../utils/button_handler');
 
 const DESIGN_COOLDOWN = 2200; // 2.2 segundos en milisegundos
@@ -27,7 +27,7 @@ module.exports = {
     if (result.levelUp) {
       await message.channel.send({ embeds: [result.levelUpEmbed] });
     }
-    message.reply({ embeds: [result.embed], components: [createNavigationRow()] });
+    message.reply({ embeds: [result.embed], components: [createNavigationRow('design')] });
   },
   data: new SlashCommandBuilder()
     .setName('design')
@@ -44,32 +44,51 @@ module.exports = {
       const expirationTime = userCooldowns.get(userId) + DESIGN_COOLDOWN;
       if (now < expirationTime) {
         const timeLeft = (expirationTime - now) / 1000;
-        return interaction.reply(`Por favor espera ${timeLeft.toFixed(1)} segundos antes de usar el comando design de nuevo.`);
+        const cooldownMessage = await interaction.reply({ content: `Por favor espera ${timeLeft.toFixed(1)} segundos antes de usar el comando design de nuevo.`, ephemeral: true });
+      
+        // Eliminar el mensaje de cooldown después de que expire
+        setTimeout(() => cooldownMessage.delete().catch(() => {}), timeLeft * 1000);
+        return;
       }
     }
 
     userCooldowns.set(userId, now);
-    const result = await executeDesign(userId, interaction.options.getString('lenguaje'));
+    const result = await executeDesign(userId, interaction.options?.getString('lenguaje'));
+  
+    const response = { embeds: [result.embed], components: [createNavigationRow('design')] };
+  
+    if (interaction.deferred || interaction.replied) {
+      await interaction.editReply(response);
+    } else {
+      await interaction.reply(response);
+    }
+
     if (result.levelUp) {
       await interaction.channel.send({ embeds: [result.levelUpEmbed] });
     }
-    interaction.reply({ embeds: [result.embed], components: [createNavigationRow()] });
   },
 };
 
 async function executeDesign(userId, selectedLanguage) {
   const userData = getUserData(userId);
-  const unlockedLanguages = getUnlockedLanguages(userData.level);
+  const activeLanguages = userData.activeLanguages || getActiveLanguages(userData);
 
-  // Seleccionar el lenguaje
-  let language = selectedLanguage && unlockedLanguages.includes(selectedLanguage) ? selectedLanguage : unlockedLanguages[Math.floor(Math.random() * unlockedLanguages.length)];
+  let totalLinesGenerated = 0;
+  let generatedLines = {};
 
-  const linesGenerated = generateLines(language, userData.level, userData.performanceBoost);
+  // Generate lines for active languages
+  for (const language of activeLanguages) {
+    const lines = generateLines(language, userData.level, userData.performanceBoost);
+    generatedLines[language] = lines;
+    totalLinesGenerated += lines;
+  }
 
-  // Verificar el almacenamiento
+  userData.totalLinesGenerated += totalLinesGenerated; // Added line
+
+  // Check storage
   const currentStorage = calculateStorageUsed(userData);
   const totalStorage = calculateTotalStorage(userData);
-  if (currentStorage + linesGenerated > totalStorage) {
+  if (currentStorage + totalLinesGenerated > totalStorage) {
     return {
       embed: new EmbedBuilder()
         .setColor('#FF0000')
@@ -81,13 +100,16 @@ async function executeDesign(userId, selectedLanguage) {
     };
   }
 
-  userData.languages[language] += linesGenerated;
-  
-  // Calcular y añadir XP
-  const xpGained = calculateXP(userData.level, linesGenerated);
+  // Add generated lines to user data
+  for (const [lang, lines] of Object.entries(generatedLines)) {
+    userData.languages[lang] = (userData.languages[lang] || 0) + lines;
+  }
+
+  // Calculate and add XP
+  const xpGained = calculateXP(userData.level, totalLinesGenerated);
   userData.xp += xpGained;
 
-  // Verificar si el usuario subió de nivel
+  // Check for level up
   let leveledUp = false;
   let newLevel = userData.level;
   let moneyReward = 0;
@@ -96,6 +118,13 @@ async function executeDesign(userId, selectedLanguage) {
     newLevel = userData.level;
     const levelConfig = gameConfig.levels.find(l => l.level === newLevel) || { moneyReward: 0 };
     moneyReward += levelConfig.moneyReward;
+    // Reset XP after leveling up, carrying over excess XP
+    const nextLevelConfig = gameConfig.levels.find(l => l.level > newLevel);
+    if (nextLevelConfig) {
+      userData.xp = userData.xp - nextLevelConfig.xpRequired;
+    } else {
+      userData.xp = 0;
+    }
   }
 
   saveUserData({ [userId]: userData });
@@ -103,19 +132,17 @@ async function executeDesign(userId, selectedLanguage) {
   const embed = new EmbedBuilder()
     .setColor('#00FF00')
     .setTitle('💻 Diseño de Código')
-    .setDescription(`Has generado código en ${language}`)
+    .setDescription(`Has generado código en ${Object.keys(generatedLines).length} lenguaje(s)`)
     .addFields(
-      { name: 'Líneas Generadas', value: formatNumber(linesGenerated), inline: true },
-      { name: 'Total de Líneas', value: formatNumber(userData.languages[language]), inline: true },
-      { name: '\u200B', value: '\u200B' },
-      { name: 'XP Ganada', value: formatNumber(xpGained), inline: true },
-      { name: 'XP Total', value: formatNumber(userData.xp), inline: true }
+      { name: 'Líneas Generadas', value: formatNumber(totalLinesGenerated), inline: true }
     )
-    .setFooter({ text: `Almacenamiento: ${formatNumber(currentStorage + linesGenerated)}/${formatNumber(totalStorage)} bytes` });
+    .setFooter({ text: `Almacenamiento: ${formatNumber(currentStorage + totalLinesGenerated)}/${formatNumber(totalStorage)} bytes | Líneas de código totales generadas: ${formatNumber(userData.totalLinesGenerated)}` }); // Modified line
 
-  Object.entries(userData.languages).forEach(([lang, lines]) => {
-    embed.addFields({ name: lang, value: formatNumber(lines), inline: true });
+  Object.entries(generatedLines).forEach(([lang, lines]) => {
+    embed.addFields({ name: lang, value: `${formatNumber(lines)} líneas`, inline: true });
   });
+
+  embed.addFields({ name: 'XP Ganada', value: formatNumber(xpGained), inline: true });
 
   let levelUpEmbed;
   if (leveledUp) {

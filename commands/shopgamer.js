@@ -1,47 +1,41 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 const { getUserData, saveUserData, formatNumber } = require('../utils/helpers');
 const pcComponents = require('../data/pc_components');
+const { createNavigationRow } = require('../utils/button_handler');
 
 module.exports = {
   name: 'shopgamer',
   description: 'Compra componentes para tu PC',
   usage: 'c!shopgamer [componente] [modelo]',
   run: async (client, message, args) => {
-    if (args.length === 0) {
-      showShopCategories(message);
-    } else if (args.length === 1) {
-      showComponentList(message, args[0]);
-    } else {
-      buyComponent(message, args[0], args.slice(1).join(' '));
-    }
+    const embed = await showShopCategories(message.author);
+    message.reply({ embeds: [embed], components: createShopButtons() });
   },
   data: new SlashCommandBuilder()
     .setName('shopgamer')
-    .setDescription('Compra componentes para tu PC')
-    .addStringOption(option =>
-      option.setName('categoria')
-        .setDescription('Categoría de componentes')
-        .setRequired(false))
-    .addStringOption(option =>
-      option.setName('modelo')
-        .setDescription('Modelo específico del componente')
-        .setRequired(false)),
+    .setDescription('Compra componentes para tu PC'),
   async execute(interaction) {
-    const category = interaction.options.getString('categoria');
-    const model = interaction.options.getString('modelo');
-
-    if (!category) {
-      showShopCategories(interaction);
-    } else if (!model) {
-      showComponentList(interaction, category);
+    if (interaction.isButton()) {
+      const [action, category, model] = interaction.customId.split('_');
+      if (action === 'category') {
+        const embed = await showComponentList(interaction.user, category);
+        await interaction.update({ embeds: [embed], components: createComponentButtons(category) });
+      } else if (action === 'buy') {
+        await buyComponent(interaction, category, model);
+      } else if (action === 'back') {
+        const embed = await showShopCategories(interaction.user);
+        await interaction.update({ embeds: [embed], components: createShopButtons() });
+      }
     } else {
-      buyComponent(interaction, category, model);
+      const embed = await showShopCategories(interaction.user);
+      await interaction.reply({ embeds: [embed], components: createShopButtons() });
     }
   },
 };
 
-function showShopCategories(context) {
+async function showShopCategories(user) {
+  const userData = getUserData(user.id);
   const embed = new EmbedBuilder()
     .setColor('#0099ff')
     .setTitle('ShopGamer - Categorías')
@@ -49,19 +43,37 @@ function showShopCategories(context) {
     .addFields(
       Object.keys(pcComponents).map(category => ({
         name: category.charAt(0).toUpperCase() + category.slice(1),
-        value: `Usa \`c!shopgamer ${category}\` para ver los modelos disponibles.`
+        value: `Usa los botones para ver los modelos disponibles.`
       }))
-    );
+    )
+    .setFooter({ text: `Balance actual: U$S ${formatNumber(userData.balance)}` });
 
-  context.reply({ embeds: [embed] });
+  return embed;
 }
 
-function showComponentList(context, category) {
-  const components = pcComponents[category];
-  if (!components) {
-    return context.reply('Categoría no válida. Usa `c!shopgamer` para ver las categorías disponibles.');
+function createShopButtons() {
+  const rows = [];
+  const categories = Object.keys(pcComponents);
+  for (let i = 0; i < categories.length; i += 5) {
+    const row = new ActionRowBuilder();
+    categories.slice(i, i + 5).forEach(category => {
+      row.addComponents(
+        new ButtonBuilder()
+          .setCustomId(`category_${category}`)
+          .setLabel(category.charAt(0).toUpperCase() + category.slice(1))
+          .setStyle(ButtonStyle.Primary)
+      );
+    });
+    rows.push(row);
   }
 
+  rows.push(createNavigationRow('shop'));
+  return rows;
+}
+
+async function showComponentList(user, category) {
+  const userData = getUserData(user.id);
+  const components = pcComponents[category];
   const embed = new EmbedBuilder()
     .setColor('#0099ff')
     .setTitle(`ShopGamer - ${category.charAt(0).toUpperCase() + category.slice(1)}`)
@@ -69,35 +81,70 @@ function showComponentList(context, category) {
     .addFields(
       components.map(component => ({
         name: component.name,
-        value: `Precio: U$S ${formatNumber(component.price)}\nUsa \`c!shopgamer ${category} ${component.name}\` para comprar.`
+        value: `Precio: U$S ${formatNumber(component.price)}`
       }))
-    );
+    )
+    .setFooter({ text: `Balance actual: U$S ${formatNumber(userData.balance)}` });
 
-  context.reply({ embeds: [embed] });
+  return embed;
 }
 
-function buyComponent(context, category, model) {
-  const userData = getUserData(context.author ? context.author.id : context.user.id);
+function createComponentButtons(category) {
   const components = pcComponents[category];
-  if (!components) {
-    return context.reply('Categoría no válida. Usa `c!shopgamer` para ver las categorías disponibles.');
+  const rows = [];
+  for (let i = 0; i < components.length; i += 5) {
+    const row = new ActionRowBuilder();
+    components.slice(i, i + 5).forEach(component => {
+      row.addComponents(
+        new ButtonBuilder()
+          .setCustomId(`buy_${category}_${component.name}`)
+          .setLabel(`${component.name}`)
+          .setStyle(ButtonStyle.Secondary)
+      );
+    });
+    rows.push(row);
   }
 
-  const component = components.find(c => c.name.toLowerCase() === model.toLowerCase());
+  const backButton = new ButtonBuilder()
+    .setCustomId('back_to_categories')
+    .setLabel('Volver a categorías')
+    .setStyle(ButtonStyle.Danger);
+
+  rows.push(new ActionRowBuilder().addComponents(backButton));
+  rows.push(createNavigationRow('shop'));
+  return rows;
+}
+
+async function buyComponent(interaction, category, model) {
+  const userData = getUserData(interaction.user.id);
+  const components = pcComponents[category];
+  const component = components.find(c => c.name === model);
+
   if (!component) {
-    return context.reply('Modelo no válido. Usa `c!shopgamer ${category}` para ver los modelos disponibles.');
+    return interaction.reply({ content: 'Modelo no válido.', ephemeral: true });
   }
 
   if (userData.balance < component.price) {
-    return context.reply(`No tienes suficiente dinero para comprar este componente. Necesitas U$S ${formatNumber(component.price)}.`);
+    return interaction.reply({ content: `No tienes suficiente dinero para comprar este componente. Necesitas U$S ${formatNumber(component.price)}.`, ephemeral: true });
   }
 
   userData.balance -= component.price;
   if (!userData.setup) userData.setup = {};
   userData.setup[category] = component;
 
-  saveUserData({ [context.author ? context.author.id : context.user.id]: userData });
+  saveUserData({ [interaction.user.id]: userData });
 
-  context.reply(`Has comprado ${component.name} por U$S ${formatNumber(component.price)}. Tu nuevo balance es U$S ${formatNumber(userData.balance)}.`);
+  const embed = new EmbedBuilder()
+    .setColor('#00FF00')
+    .setTitle(`Compra Exitosa`)
+    .setDescription(`Has comprado ${component.name} por U$S ${formatNumber(component.price)}. Tu nuevo balance es U$S ${formatNumber(userData.balance)}.`);
+
+  await interaction.update({ embeds: [embed], components: [] });
+
+  // Enviar un nuevo mensaje después de 3 segundos con la lista de componentes actualizada
+  setTimeout(async () => {
+    const updatedEmbed = await showComponentList(interaction.user, category);
+    await interaction.editReply({ embeds: [updatedEmbed], components: createComponentButtons(category) });
+  }, 3000);
 }
 

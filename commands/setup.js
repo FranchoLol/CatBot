@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder } = require('discord.js');
 const { getUserData } = require('../utils/helpers');
+const { createNavigationRow } = require('../utils/button_handler');
 
 module.exports = {
   name: 'setup',
@@ -10,7 +11,7 @@ module.exports = {
     const target = message.mentions.users.first() || message.author;
     const userData = getUserData(target.id);
     const embed = createSetupEmbed(target, userData);
-    message.reply({ embeds: [embed] });
+    message.reply({ embeds: [embed], components: [createNavigationRow('setup')] });
   },
   data: new SlashCommandBuilder()
     .setName('setup')
@@ -20,10 +21,17 @@ module.exports = {
         .setDescription('Usuario del que quieres ver el setup')
         .setRequired(false)),
   async execute(interaction) {
-    const target = interaction.options.getUser('usuario') || interaction.user;
+    const target = interaction.options?.getUser('usuario') || interaction.user;
     const userData = getUserData(target.id);
     const embed = createSetupEmbed(target, userData);
-    interaction.reply({ embeds: [embed] });
+    
+    const response = { embeds: [embed], components: [createNavigationRow('setup')] };
+    
+    if (interaction.deferred || interaction.replied) {
+      await interaction.editReply(response);
+    } else {
+      await interaction.reply(response);
+    }
   },
 };
 

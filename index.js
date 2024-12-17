@@ -95,7 +95,7 @@ client.once('ready', () => {
 
     const activities = [
       { type: ActivityType.Playing, name: `Prefijo: ${client.config.defaultPrefix}` },
-      { type: ActivityType.Watching, name: `${totalServers} servidores` },
+      { type: ActivityType.Watching, name: `**${totalServers} servidores**` },
       { type: ActivityType.Listening, name: `${totalUsers} usuarios` },
     ];
 
@@ -108,7 +108,16 @@ client.once('ready', () => {
 
 client.on('interactionCreate', async interaction => {
   if (interaction.isButton()) {
-    handleNavigationButton(interaction);
+    const [action, command] = interaction.customId.split('_');
+    if (action === 'nav') {
+      const commandModule = client.commands.get(command);
+      if (commandModule && commandModule.execute) {
+        await commandModule.execute(interaction);
+      }
+    } else {
+      console.log('Botón presionado:', interaction.customId);
+      await handleNavigationButton(interaction);
+    }
     return;
   }
 

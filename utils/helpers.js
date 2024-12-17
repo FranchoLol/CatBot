@@ -30,7 +30,8 @@ function getUserData(userId) {
       lastChatGPTReward: 0,
       lastFreelance: 0,
       lastCleaning: 0,
-      performanceBoost: 1
+      performanceBoost: 1,
+      totalLinesGenerated: 0  // Nuevo campo
     };
     saveUserData(users);
   }
@@ -43,6 +44,9 @@ function saveUserData(users) {
 }
 
 function formatNumber(num) {
+  if (num === null || num === undefined) {
+    return '0';
+  }
   return num.toLocaleString('en-US');
 }
 
@@ -64,14 +68,20 @@ function levelUp(userData) {
   const nextLevelConfig = gameConfig.levels.find(l => l.level > userData.level);
 
   if (nextLevelConfig && userData.xp >= nextLevelConfig.xpRequired) {
+    const excessXP = userData.xp - nextLevelConfig.xpRequired;
     userData.level = nextLevelConfig.level;
     userData.balance += nextLevelConfig.moneyReward;
-    
-    // Unlock new language if available
+    userData.xp = excessXP; // Establecer el XP excedente
+
+    // Verificar si se ha desbloqueado un nuevo lenguaje
     const newLanguage = gameConfig.languages.find(l => l.unlockLevel === userData.level);
     if (newLanguage && !userData.languages[newLanguage.name]) {
       userData.languages[newLanguage.name] = 0;
+      userData.newLanguageUnlocked = newLanguage.name; // Añadir esta propiedad para anunciar el nuevo lenguaje
     }
+
+    // Actualizar lenguajes activos
+    userData = updateActiveLanguages(userData);
 
     return true;
   }
@@ -108,6 +118,34 @@ function createLevelUpEmbed(user, newLevel, moneyReward) {
     .setTimestamp();
 }
 
+function getActiveLanguages(userData) {
+  const activeLanguages = Object.entries(userData.languages)
+    .filter(([lang, lines]) => lines > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([lang]) => lang);
+
+  return activeLanguages;
+}
+
+function updateActiveLanguages(userData) {
+  const unlockedLanguages = getUnlockedLanguages(userData.level);
+  if (!userData.activeLanguages || userData.activeLanguages.length === 0) {
+    userData.activeLanguages = unlockedLanguages.slice(0, 3);
+  } else {
+    // Mantener los lenguajes activos seleccionados por el usuario
+    userData.activeLanguages = userData.activeLanguages.filter(lang => unlockedLanguages.includes(lang));
+    // Añadir nuevos lenguajes desbloqueados si hay espacio
+    while (userData.activeLanguages.length < 3 && unlockedLanguages.length > userData.activeLanguages.length) {
+      const newLang = unlockedLanguages.find(lang => !userData.activeLanguages.includes(lang));
+      if (newLang) {
+        userData.activeLanguages.push(newLang);
+      }
+    }
+  }
+  return userData;
+}
+
 module.exports = {
   getUserData,
   saveUserData,
@@ -121,5 +159,7 @@ module.exports = {
   generateLines,
   calculateXP,
   createLevelUpEmbed,
+  getActiveLanguages,
+  updateActiveLanguages,
 };
 

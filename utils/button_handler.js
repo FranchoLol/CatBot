@@ -1,30 +1,33 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder } = require('discord.js');
 const navigationButtons = require('../data/navigation_buttons');
 
-function createNavigationRow() {
+function createNavigationRow(command) {
   const row = new ActionRowBuilder();
-  
-  navigationButtons.buttons.forEach(button => {
+  const buttons = navigationButtons.buttons[command] || [];
+
+  buttons.forEach(button => {
     row.addComponents(
       new ButtonBuilder()
         .setCustomId(button.id)
         .setLabel(button.label)
-        .setStyle(ButtonStyle.Secondary)
+        .setStyle(button.style)
     );
   });
 
   return row;
 }
 
-function handleNavigationButton(interaction) {
-  const buttonConfig = navigationButtons.buttons.find(b => b.id === interaction.customId);
+async function handleNavigationButton(interaction) {
+  const buttonConfig = Object.values(navigationButtons.buttons)
+    .flat()
+    .find(b => b.id === interaction.customId);
+
   if (!buttonConfig) return;
 
-  // Ejecutar el comando correspondiente
   const command = interaction.client.commands.get(buttonConfig.command);
   if (!command) return;
 
-  command.execute(interaction);
+  await command.execute(interaction);
 }
 
 module.exports = {

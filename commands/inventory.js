@@ -13,7 +13,7 @@ module.exports = {
     const embed = createInventoryEmbed(target, userData);
     message.reply({ 
       embeds: [embed],
-      components: [createNavigationRow()]
+      components: [createNavigationRow('inventory')]
     });
   },
   data: new SlashCommandBuilder()
@@ -24,50 +24,58 @@ module.exports = {
         .setDescription('Usuario del que quieres ver el inventario')
         .setRequired(false)),
   async execute(interaction) {
-    const target = interaction.options.getUser('usuario') || interaction.user;
+    const target = interaction.options?.getUser('usuario') || interaction.user;
     const userData = getUserData(target.id);
     const embed = createInventoryEmbed(target, userData);
-    interaction.reply({ 
-      embeds: [embed],
-      components: [createNavigationRow()]
-    });
+    
+    const response = { embeds: [embed], components: [createNavigationRow('inventory')] };
+    
+    if (interaction.deferred || interaction.replied) {
+      await interaction.editReply(response);
+    } else {
+      await interaction.reply(response);
+    }
   },
 };
 
 function createInventoryEmbed(user, userData) {
-  const totalLines = Object.values(userData.languages).reduce((sum, lines) => sum + lines, 0);
+  const totalLines = Object.values(userData.languages).reduce((sum, lines) => sum + (lines || 0), 0);
   const moneyInLines = Object.entries(userData.languages).reduce((sum, [lang, lines]) => {
     const langConfig = gameConfig.languages.find(l => l.name === lang);
-    return sum + lines * langConfig.exchangeRate;
+    return sum + (lines || 0) * (langConfig?.exchangeRate || 0);
   }, 0);
 
   const storageUsed = calculateStorageUsed(userData);
   const totalStorage = calculateTotalStorage(userData);
 
-  const nextLevelConfig = gameConfig.levels.find(l => l.level > userData.level);
-  const xpToNextLevel = nextLevelConfig ? nextLevelConfig.xpRequired - userData.xp : 'Max';
+  const nextLevelConfig = gameConfig.levels.find(l => l.level > (userData.level || 0));
+  const xpToNextLevel = nextLevelConfig ? nextLevelConfig.xpRequired - (userData.xp || 0) : 'Max';
+  const xpNeeded = nextLevelConfig ? nextLevelConfig.xpRequired : (userData.xp || 0);
 
   const embed = new EmbedBuilder()
     .setColor('#0099ff')
     .setTitle(`Developer ${user.tag}`)
-    .setDescription(`Level ${userData.level}, ${formatNumber(userData.xp)} XP (${formatNumber(xpToNextLevel)} para el siguiente nivel)
+    .setDescription(`**Level: ${userData.level || 0}**, ${userData.xp || 0}/${xpNeeded} XP ${xpToNextLevel !== 'Max' ? `(${formatNumber(xpToNextLevel)} para el siguiente nivel)` : ''}
 Balance: U$S ${formatNumber(userData.balance)}
 Booster: ${userData.performanceBoost > 1 ? `${((userData.performanceBoost - 1) * 100).toFixed(0)}% ☕` : 'none'}
 
-Almacenamiento: ${formatNumber(storageUsed)}/${formatNumber(totalStorage)} bytes ${storageUsed >= totalStorage ? '(LLENO)' : ''}
+Almacenamiento: ${formatNumber(storageUsed)}/${formatNumber(totalStorage)} bytes ${storageUsed >= totalStorage ? '(LLENO)' : ''}`)
+    .setFooter({ text: `Líneas de código totales generadas: ${formatNumber(userData.totalLinesGenerated || 0)} | Usa los comandos: design, shopgamer, setup, sellcode` });
 
-Dinero en líneas: U$S ${formatNumber(moneyInLines)}
-Líneas de código totales: ${formatNumber(totalLines)}`)
-    .setFooter({ text: 'Usa los comandos: design, shopgamer, setup, sellcode' });
+  const getActiveLanguages = (userData) => {
+    return Object.keys(userData.languages).filter(lang => userData.languages[lang] > 0);
+  };
 
-  Object.entries(userData.languages).forEach(([lang, lines]) => {
+  const activeLanguages = getActiveLanguages(userData);
+  activeLanguages.forEach(lang => {
+    const lines = userData.languages[lang];
     const langConfig = gameConfig.languages.find(l => l.name === lang);
-    embed.addFields({
-      name: lang,
-      value: `${formatNumber(lines)} líneas (${formatNumber(lines * gameConfig.bytesPerLine)} bytes) - U$S ${formatNumber(lines * langConfig.exchangeRate)}`,
-      inline: true
-    });
+    const bytes = lines * gameConfig.bytesPerLine;
+    const sellValue = lines * (langConfig?.exchangeRate || 0);
+    embed.addFields({ name: lang, value: `${formatNumber(lines)} líneas (${formatNumber(bytes)} bytes) - U$S ${formatNumber(sellValue)}`, inline: true });
   });
+
+  embed.addFields({ name: 'Dinero en líneas', value: `U$S ${formatNumber(moneyInLines)}`, inline: false });
 
   if (storageUsed >= totalStorage) {
     embed.addFields({

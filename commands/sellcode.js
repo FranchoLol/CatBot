@@ -3,7 +3,7 @@ const { getUserData, saveUserData, formatNumber, gameConfig } = require('../util
 
 module.exports = {
   name: 'sellcode',
-  description: 'Vende tus líneas de código por dinero',
+  description: 'Vende líneas de código',
   usage: 'c!sellcode [lenguaje] [cantidad]',
   run: async (client, message, args) => {
     const result = executeSellCode(message.author.id, args[0], args[1]);
@@ -11,53 +11,71 @@ module.exports = {
   },
   data: new SlashCommandBuilder()
     .setName('sellcode')
-    .setDescription('Vende tus líneas de código por dinero')
+    .setDescription('Vende líneas de código')
     .addStringOption(option =>
       option.setName('lenguaje')
-        .setDescription('Lenguaje del código que quieres vender')
+        .setDescription('Lenguaje a vender (deja vacío para vender todo)')
         .setRequired(false))
     .addIntegerOption(option =>
       option.setName('cantidad')
-        .setDescription('Cantidad de líneas que quieres vender')
+        .setDescription('Cantidad de líneas a vender')
         .setRequired(false)),
   async execute(interaction) {
-    const result = executeSellCode(
-      interaction.user.id,
-      interaction.options.getString('lenguaje'),
-      interaction.options.getInteger('cantidad')
-    );
-    interaction.reply(result);
+    const language = interaction.options?.getString('lenguaje');
+    const amount = interaction.options?.getInteger('cantidad');
+    const result = executeSellCode(interaction.user.id, language, amount);
+    await interaction.reply(result);
   },
 };
 
+function isValidLanguage(language) {
+  return gameConfig.languages.some(lang => lang.name.toLowerCase() === language.toLowerCase());
+}
+
 function executeSellCode(userId, language, amount) {
   const userData = getUserData(userId);
-  let totalLines = 0;
-  let totalMoney = 0;
 
-  if (language && amount) {
-    if (!userData.languages[language]) {
-      return `No tienes líneas de código en ${language}.`;
-    }
-    if (userData.languages[language] < amount) {
-      return `No tienes suficientes líneas de código en ${language}. Tienes ${formatNumber(userData.languages[language])} líneas.`;
-    }
-    totalLines = amount;
-    const langConfig = gameConfig.languages.find(l => l.name === language);
-    totalMoney = amount * langConfig.exchangeRate;
-    userData.languages[language] -= amount;
-  } else {
-    for (const [lang, lines] of Object.entries(userData.languages)) {
-      totalLines += lines;
-      const langConfig = gameConfig.languages.find(l => l.name === lang);
-      totalMoney += lines * langConfig.exchangeRate;
-      userData.languages[lang] = 0;
-    }
+  if (language && !isValidLanguage(language)) {
+    return 'Lenguaje no válido. Por favor, elige un lenguaje que hayas desbloqueado.';
   }
 
-  userData.balance += totalMoney;
+  if (!language) {
+    // Vender todas las líneas
+    let totalMoney = 0;
+    for (const lang in userData.languages) {
+      const langConfig = gameConfig.languages.find(l => l.name === lang);
+      totalMoney += (userData.languages[lang] || 0) * (langConfig?.exchangeRate || 0);
+      userData.languages[lang] = 0;
+    }
+    userData.balance += totalMoney;
+    saveUserData({ [userId]: userData });
+    return `Has vendido todas tus líneas de código por U$S ${formatNumber(totalMoney)}. Tu nuevo balance es U$S ${formatNumber(userData.balance)}.`;
+  }
+
+  if (!userData.languages[language]) {
+    return 'No tienes líneas de código en ese lenguaje.';
+  }
+
+  const langConfig = gameConfig.languages.find(l => l.name === language);
+
+  if (!amount) {
+    // Vender todas las líneas del lenguaje especificado
+    const totalMoney = (userData.languages[language] || 0) * (langConfig?.exchangeRate || 0);
+    userData.balance += totalMoney;
+    userData.languages[language] = 0;
+    saveUserData({ [userId]: userData });
+    return `Has vendido todas tus líneas de ${language} por U$S ${formatNumber(totalMoney)}. Tu nuevo balance es U$S ${formatNumber(userData.balance)}.`;
+  }
+
+  if (amount > (userData.languages[language] || 0)) {
+    return `No tienes suficientes líneas de ${language}. Tienes ${userData.languages[language] || 0} líneas.`;
+  }
+
+  const money = amount * (langConfig?.exchangeRate || 0);
+  userData.balance += money;
+  userData.languages[language] -= amount;
   saveUserData({ [userId]: userData });
 
-  return `Has vendido ${formatNumber(totalLines)} líneas de código por U$S ${formatNumber(totalMoney.toFixed(2))}. Tu nuevo balance es U$S ${formatNumber(userData.balance.toFixed(2))}.`;
+  return `Has vendido ${amount} líneas de ${language} por U$S ${formatNumber(money)}. Tu nuevo balance es U$S ${formatNumber(userData.balance)}.`;
 }
 
