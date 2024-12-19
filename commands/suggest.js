@@ -9,7 +9,24 @@ module.exports = {
   run: async (client, message, args) => {
     const cooldownMinutes = await checkCooldown(message.author.id, 'suggest');
     if (cooldownMinutes > 0) {
-      return message.reply(`Por favor, espera ${cooldownMinutes} minutos antes de enviar otra sugerencia.`);
+      const cooldownEmbed = new EmbedBuilder()
+        .setColor('#FFA500')
+        .setDescription(`Por favor, espera \`${cooldownMinutes}\` minutos antes de enviar otra sugerencia.`);
+      
+      const cooldownMsg = await message.reply({ embeds: [cooldownEmbed] });
+      
+      const interval = setInterval(() => {
+        cooldownMinutes--;
+        if (cooldownMinutes <= 0) {
+          clearInterval(interval);
+          cooldownMsg.delete().catch(console.error);
+        } else {
+          cooldownEmbed.setDescription(`Por favor, espera \`${cooldownMinutes}\` minutos antes de enviar otra sugerencia.`);
+          cooldownMsg.edit({ embeds: [cooldownEmbed] }).catch(console.error);
+        }
+      }, 60000); // Actualizar cada minuto
+      
+      return;
     }
 
     const suggestion = args.join(' ');
@@ -60,7 +77,24 @@ module.exports = {
   async execute(interaction) {
     const cooldownMinutes = await checkCooldown(interaction.user.id, 'suggest');
     if (cooldownMinutes > 0) {
-      return interaction.reply({ content: `Por favor, espera ${cooldownMinutes} minutos antes de enviar otra sugerencia.`, ephemeral: true });
+      const cooldownEmbed = new EmbedBuilder()
+        .setColor('#FFA500')
+        .setDescription(`Por favor, espera \`${cooldownMinutes}\` minutos antes de enviar otra sugerencia.`);
+      
+      const cooldownMsg = await interaction.reply({ embeds: [cooldownEmbed], ephemeral: true, fetchReply: true });
+      
+      const interval = setInterval(() => {
+        cooldownMinutes--;
+        if (cooldownMinutes <= 0) {
+          clearInterval(interval);
+          cooldownMsg.delete().catch(console.error);
+        } else {
+          cooldownEmbed.setDescription(`Por favor, espera \`${cooldownMinutes}\` minutos antes de enviar otra sugerencia.`);
+          interaction.editReply({ embeds: [cooldownEmbed] }).catch(console.error);
+        }
+      }, 60000); // Actualizar cada minuto
+      
+      return;
     }
 
     const suggestion = interaction.options.getString('sugerencia');
@@ -104,10 +138,10 @@ function createSuggestionEmbed(context, suggestion) {
 
   return new EmbedBuilder()
     .setColor('#00FF00')
-    .setTitle(`@${user.tag} (${user.id})`)
+    .setTitle(`Sugerencia de ${user}`)
     .setDescription(suggestion)
     .addFields(
-      { name: 'Servidor', value: guild ? `[${guild.name}](https://discord.gg/${guild.vanityURLCode || 'invite'})` : 'DM', inline: true }
+      { name: 'Servidor', value: guild ? `[${guild.name}](https://discord.com/channels/${guild.id})` : 'DM', inline: true }
     )
     .setTimestamp()
     .setFooter({ text: new Date().toLocaleString() });

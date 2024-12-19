@@ -9,7 +9,24 @@ module.exports = {
   run: async (client, message, args) => {
     const cooldownMinutes = await checkCooldown(message.author.id, 'report');
     if (cooldownMinutes > 0) {
-      return message.reply(`Por favor, espera ${cooldownMinutes} minutos antes de enviar otro reporte.`);
+      const cooldownEmbed = new EmbedBuilder()
+        .setColor('#FFA500')
+        .setDescription(`Por favor, espera \`${cooldownMinutes}\` minutos antes de enviar otro reporte.`);
+      
+      const cooldownMsg = await message.reply({ embeds: [cooldownEmbed] });
+      
+      const interval = setInterval(() => {
+        cooldownMinutes--;
+        if (cooldownMinutes <= 0) {
+          clearInterval(interval);
+          cooldownMsg.delete().catch(console.error);
+        } else {
+          cooldownEmbed.setDescription(`Por favor, espera \`${cooldownMinutes}\` minutos antes de enviar otro reporte.`);
+          cooldownMsg.edit({ embeds: [cooldownEmbed] }).catch(console.error);
+        }
+      }, 60000); // Actualizar cada minuto
+      
+      return;
     }
 
     const bugDescription = args.join(' ');
@@ -60,7 +77,24 @@ module.exports = {
   async execute(interaction) {
     const cooldownMinutes = await checkCooldown(interaction.user.id, 'report');
     if (cooldownMinutes > 0) {
-      return interaction.reply({ content: `Por favor, espera ${cooldownMinutes} minutos antes de enviar otro reporte.`, ephemeral: true });
+      const cooldownEmbed = new EmbedBuilder()
+        .setColor('#FFA500')
+        .setDescription(`Por favor, espera \`${cooldownMinutes}\` minutos antes de enviar otro reporte.`);
+      
+      const cooldownMsg = await interaction.reply({ embeds: [cooldownEmbed], ephemeral: true, fetchReply: true });
+      
+      const interval = setInterval(() => {
+        cooldownMinutes--;
+        if (cooldownMinutes <= 0) {
+          clearInterval(interval);
+          cooldownMsg.delete().catch(console.error);
+        } else {
+          cooldownEmbed.setDescription(`Por favor, espera \`${cooldownMinutes}\` minutos antes de enviar otro reporte.`);
+          interaction.editReply({ embeds: [cooldownEmbed] }).catch(console.error);
+        }
+      }, 60000); // Actualizar cada minuto
+      
+      return;
     }
 
     const bugDescription = interaction.options.getString('descripcion');
@@ -104,10 +138,10 @@ function createReportEmbed(context, bugDescription) {
 
   return new EmbedBuilder()
     .setColor('#FF0000')
-    .setTitle(`@${user.tag} (${user.id})`)
+    .setTitle(`Reporte de ${user}`)
     .setDescription(bugDescription)
     .addFields(
-      { name: 'Servidor', value: guild ? `[${guild.name}](https://discord.gg/${guild.vanityURLCode || 'invite'})` : 'DM', inline: true }
+      { name: 'Servidor', value: guild ? `[${guild.name}](https://discord.com/channels/${guild.id})` : 'DM', inline: true }
     )
     .setTimestamp()
     .setFooter({ text: new Date().toLocaleString() });
