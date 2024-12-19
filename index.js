@@ -6,7 +6,8 @@ const {
   ActivityType, 
   Collection, 
   PresenceUpdateStatus,
-  EmbedBuilder
+  EmbedBuilder,
+  WebhookClient
 } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
@@ -155,6 +156,19 @@ client.on('messageCreate', async message => {
     if (!message.guild || message.author.bot) return;
 
     const prefix = getPrefix(message.guild.id);
+    const premiumSettings = await getPremiumSettings(message.guild.id);
+
+    if (premiumSettings && message.mentions.has(client.user)) {
+      // Usar webhook para responder si es un servidor premium
+      const webhook = await getOrCreateWebhook(message.channel, premiumSettings);
+      await webhook.send({
+        content: message.content.replace(`<@${client.user.id}>`, ''),
+        username: premiumSettings.webhookName,
+        avatarURL: premiumSettings.webhookAvatar,
+      });
+      return;
+    }
+
     if (!message.content.toLowerCase().startsWith(prefix.toLowerCase())) {
       const result = addMessageExperience(message.guild.id, message.author.id, message.content.length, message.channel.id);
 
@@ -330,5 +344,19 @@ function getResponse(lang, key, ...args) {
     message = message.replace('%s', args[i]);
   }
   return message;
+}
+
+async function getOrCreateWebhook(channel, premiumSettings) {
+  const webhooks = await channel.fetchWebhooks();
+  let webhook = webhooks.find(wh => wh.owner.id === client.user.id);
+
+  if (!webhook) {
+    webhook = await channel.createWebhook({
+      name: premiumSettings.webhookName,
+      avatar: premiumSettings.webhookAvatar,
+    });
+  }
+
+  return webhook;
 }
 

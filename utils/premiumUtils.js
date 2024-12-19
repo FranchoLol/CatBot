@@ -24,13 +24,13 @@ async function isPremium(guildId) {
   return !!premiumServers[guildId];
 }
 
-async function setPremium(guildId, isPremium, virtualName, virtualAvatar) {
+async function setPremium(guildId, isPremium, webhookName, webhookAvatar) {
   const premiumServers = await getPremiumServers();
   if (isPremium) {
     premiumServers[guildId] = {
       active: true,
-      virtualName: virtualName || 'CatGold 🐈',
-      virtualAvatar: virtualAvatar || 'https://example.com/catgold.png'
+      webhookName: webhookName || 'CatGold 🐈',
+      webhookAvatar: webhookAvatar || 'https://example.com/catgold.png'
     };
   } else {
     delete premiumServers[guildId];

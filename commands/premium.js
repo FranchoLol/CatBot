@@ -5,18 +5,18 @@ const { setPremium, isPremium, getPremiumSettings } = require('../utils/premiumU
 module.exports = {
   name: 'premium',
   description: 'Gestiona la versión premium del bot',
-  usage: 'c!premium [activate/deactivate] [virtualName] [virtualAvatarURL]',
+  usage: 'c!premium [activate/deactivate] [webhookName] [webhookAvatarURL]',
   run: async (client, message, args) => {
     if (!message.member.permissions.has(PermissionFlagsBits.Administrator)) {
       return message.reply('No tienes permiso para usar este comando.');
     }
 
     const subcommand = args[0]?.toLowerCase();
-    const virtualName = args[1] || 'CatGold 🐈';
-    const virtualAvatar = args[2] || 'https://example.com/catgold.png';
+    const webhookName = args[1] || 'CatGold 🐈';
+    const webhookAvatar = args[2] || 'https://example.com/catgold.png';
 
     if (!subcommand || (subcommand !== 'activate' && subcommand !== 'deactivate')) {
-      return message.reply('Uso correcto: c!premium [activate/deactivate] [virtualName] [virtualAvatarURL]');
+      return message.reply('Uso correcto: c!premium [activate/deactivate] [webhookName] [webhookAvatarURL]');
     }
 
     const guildId = message.guild.id;
@@ -26,8 +26,8 @@ module.exports = {
       if (currentStatus) {
         return message.reply('Este servidor ya tiene la versión premium activada.');
       }
-      await setPremium(guildId, true, virtualName, virtualAvatar);
-      return message.reply(`¡Versión premium activada! El bot aparecerá como "${virtualName}" en este servidor.`);
+      await setPremium(guildId, true, webhookName, webhookAvatar);
+      return message.reply(`¡Versión premium activada! El bot aparecerá como "${webhookName}" en este servidor.`);
     } else {
       if (!currentStatus) {
         return message.reply('Este servidor no tiene la versión premium activada.');
@@ -44,12 +44,12 @@ module.exports = {
         .setName('activate')
         .setDescription('Activa la versión premium del bot')
         .addStringOption(option =>
-          option.setName('virtualname')
-            .setDescription('Nombre virtual para el bot en este servidor')
+          option.setName('webhookname')
+            .setDescription('Nombre del webhook para el bot en este servidor')
             .setRequired(false))
         .addStringOption(option =>
-          option.setName('virtualavatar')
-            .setDescription('URL del avatar virtual para el bot en este servidor')
+          option.setName('webhookavatar')
+            .setDescription('URL del avatar del webhook para el bot en este servidor')
             .setRequired(false)))
     .addSubcommand(subcommand =>
       subcommand
@@ -68,10 +68,10 @@ module.exports = {
       if (currentStatus) {
         return interaction.reply('Este servidor ya tiene la versión premium activada.');
       }
-      const virtualName = interaction.options.getString('virtualname') || 'CatGold 🐈';
-      const virtualAvatar = interaction.options.getString('virtualavatar') || 'https://example.com/catgold.png';
-      await setPremium(guildId, true, virtualName, virtualAvatar);
-      return interaction.reply(`¡Versión premium activada! El bot aparecerá como "${virtualName}" en este servidor.`);
+      const webhookName = interaction.options.getString('webhookname') || 'CatGold 🐈';
+      const webhookAvatar = interaction.options.getString('webhookavatar') || 'https://example.com/catgold.png';
+      await setPremium(guildId, true, webhookName, webhookAvatar);
+      return interaction.reply(`¡Versión premium activada! El bot aparecerá como "${webhookName}" en este servidor.`);
     } else {
       if (!currentStatus) {
         return interaction.reply('Este servidor no tiene la versión premium activada.');
