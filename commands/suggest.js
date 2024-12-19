@@ -22,7 +22,7 @@ module.exports = {
     const suggestionChannel = client.channels.cache.get('1319114611424890951');
     if (suggestionChannel) {
       const sentMessage = await suggestionChannel.send({ embeds: [suggestionEmbed] });
-      await sentMessage.react('✅');
+      //await sentMessage.react('✅'); //Removed reaction
       
       if (message.attachments.size > 0) {
         const attachmentEmbed = new EmbedBuilder()
@@ -73,7 +73,7 @@ module.exports = {
     const suggestionChannel = interaction.client.channels.cache.get('1319114611424890951');
     if (suggestionChannel) {
       const sentMessage = await suggestionChannel.send({ embeds: [suggestionEmbed] });
-      await sentMessage.react('✅');
+      //await sentMessage.react('✅'); //Removed reaction
       
       const attachment = interaction.options.getAttachment('archivo');
       if (attachment) {
@@ -104,7 +104,7 @@ function createSuggestionEmbed(context, suggestion) {
 
   return new EmbedBuilder()
     .setColor('#00FF00')
-    .setTitle(`Sugerencia de @${user.tag} (${user.id})`)
+    .setTitle(`@${user.tag} (${user.id})`)
     .setDescription(suggestion)
     .addFields(
       { name: 'Servidor', value: guild ? `[${guild.name}](https://discord.gg/${guild.vanityURLCode || 'invite'})` : 'DM', inline: true }

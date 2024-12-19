@@ -104,7 +104,7 @@ function createReportEmbed(context, bugDescription) {
 
   return new EmbedBuilder()
     .setColor('#FF0000')
-    .setTitle(`Reporte de @${user.tag} (${user.id})`)
+    .setTitle(`@${user.tag} (${user.id})`)
     .setDescription(bugDescription)
     .addFields(
       { name: 'Servidor', value: guild ? `[${guild.name}](https://discord.gg/${guild.vanityURLCode || 'invite'})` : 'DM', inline: true }
