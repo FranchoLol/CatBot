@@ -12,6 +12,8 @@ const fs = require('fs');
 const path = require('path');
 const { handleNavigationButton } = require('./utils/button_handler');
 const { getBirthdayChannelConfig, addMessageExperience, getLevelChannelConfig, checkForBirthdays, sendBirthdayMessage } = require('./utils/helpers'); 
+const { getAutoroles } = require('./utils/autoroleUtils');
+const { setPremium, isPremium, getPremiumServers, getPremiumSettings } = require('./utils/premiumUtils');
 
 const client = new Client({
   intents: [
@@ -101,14 +103,17 @@ client.once('ready', async () => {
     activityIndex = (activityIndex + 1) % activities.length;
   }, 10000);
 
-  
+  // Check premium status for all guilds
+  for (const guild of client.guilds.cache.values()) {
+    await updateBotPresenceForGuild(guild);
+  }
+
   setInterval(async () => {
-    checkBirthdays(client);
+    await checkBirthdays(client);
   }, 60000); 
 });
 
 async function checkBirthdays(client) {
-  const { checkForBirthdays } = require('./utils/helpers');
   await checkForBirthdays(client);
 }
 
@@ -184,7 +189,8 @@ client.on('messageCreate', async message => {
             if (config.message.type === 'embed') {
               const embed = new EmbedBuilder()
                 .setColor(config.message.color)
-                .setDescription(customMessage);
+                .setDescription(customMessage)
+                .setAuthor({ name: client.user.username, iconURL: await getVirtualAvatarForGuild(message.guild.id) });
               channel.send({ embeds: [embed] });
             } else {
               channel.send(customMessage);
@@ -218,6 +224,87 @@ client.on('messageCreate', async message => {
   } catch (error) {
     console.error('Error processing message:', error);
   }
+});
+
+client.on('guildMemberAdd', async (member) => {
+  // Código de bienvenida existente
+  const config = getConfig();
+  const guildConfig = config[member.guild.id];
+  
+  if (guildConfig && guildConfig.welcomeMessage) {
+    const welcomeChannel = member.guild.channels.cache.get(guildConfig.welcomeChannel);
+    if (welcomeChannel) {
+      const { type, color, title, showTime, content } = guildConfig.welcomeMessage;
+      
+      if (type === 'embed') {
+        const embed = new EmbedBuilder()
+          .setColor(color)
+          .setTitle(title.replace('[user]', member.user.tag))
+          .setDescription(content.replace('[user]', member.toString()).replace('[count]', member.guild.memberCount.toString()));
+        
+        if (showTime) {
+          embed.setTimestamp();
+        }
+        
+        welcomeChannel.send({ embeds: [embed] });
+      } else {
+        const message = content.replace('[user]', member.toString()).replace('[count]', member.guild.memberCount.toString());
+        welcomeChannel.send(message);
+      }
+    }
+  }
+
+  // Nuevo código para autorole
+  try {
+    const autoroles = await getAutoroles();
+    const guildAutoroles = autoroles[member.guild.id];
+    
+    if (guildAutoroles) {
+      const rolesToAdd = member.user.bot ? guildAutoroles.bot : guildAutoroles.user;
+      
+      if (rolesToAdd && rolesToAdd.length > 0) {
+        for (const roleId of rolesToAdd) {
+          const role = member.guild.roles.cache.get(roleId);
+          if (role) {
+            await member.roles.add(role);
+            console.log(`Rol ${role.name} añadido a ${member.user.tag} en ${member.guild.name}`);
+          } else {
+            console.log(`Rol con ID ${roleId} no encontrado en ${member.guild.name}`);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error al aplicar autoroles:', error);
+  }
+});
+
+function getConfig() {
+  const configPath = path.join(__dirname, 'data', 'welcome_config.json');
+  if (!fs.existsSync(configPath)) {
+    return {};
+  }
+  return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+}
+
+async function updateBotPresenceForGuild(guild) {
+  const member = await guild.members.fetch(client.user.id);
+  const premiumSettings = await getPremiumSettings(guild.id);
+
+  if (premiumSettings) {
+    await member.setNickname(premiumSettings.virtualName);
+  } else {
+    await member.setNickname('CatBot 🐈');
+  }
+}
+
+async function getVirtualAvatarForGuild(guildId) {
+  const premiumSettings = await getPremiumSettings(guildId);
+  return premiumSettings ? premiumSettings.virtualAvatar : client.user.displayAvatarURL();
+}
+
+client.on('guildCreate', async (guild) => {
+  await updateBotPresenceForGuild(guild);
 });
 
 client.login(process.env.DISCORD_TOKEN);

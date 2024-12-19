@@ -10,12 +10,15 @@ const birthdayConfigPath = path.join(__dirname, '..', 'data', 'birthdayConfig.js
 const gameConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
 function getUserData(userId) {
+  console.log('Getting user data for:', userId);
   let users = {};
   if (fs.existsSync(dataPath)) {
     users = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
   }
+  console.log('All users data:', users);
 
   if (!users[userId]) {
+    console.log('Creating new user data for:', userId);
     const initialLanguages = getUnlockedLanguages(0);
     const languages = {};
     initialLanguages.forEach(lang => {
@@ -33,11 +36,14 @@ function getUserData(userId) {
       lastFreelance: 0,
       lastCleaning: 0,
       performanceBoost: 1,
-      totalLinesGenerated: 0  // Nuevo campo
+      totalLinesGenerated: 0
     };
+    // Set HTML as the default active language
+    users[userId].activeLanguages = ['HTML'];
     saveUserData(users);
   }
 
+  console.log('Returning user data:', users[userId]);
   return users[userId];
 }
 
@@ -121,13 +127,14 @@ function createLevelUpEmbed(user, newLevel, moneyReward) {
 }
 
 function getActiveLanguages(userData) {
-  const activeLanguages = Object.entries(userData.languages)
-    .filter(([lang, lines]) => lines > 0)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([lang]) => lang);
-
-  return activeLanguages;
+  console.log('Getting active languages for user:', userData);
+  if (!userData.activeLanguages || userData.activeLanguages.length === 0) {
+    console.log('No active languages found, setting HTML as default');
+    userData.activeLanguages = ['HTML'];
+    saveUserData({ [userData.id]: userData });
+  }
+  console.log('Returning active languages:', userData.activeLanguages);
+  return userData.activeLanguages;
 }
 
 function updateActiveLanguages(userData) {

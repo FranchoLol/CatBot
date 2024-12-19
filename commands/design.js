@@ -44,19 +44,15 @@ module.exports = {
       const expirationTime = userCooldowns.get(userId) + DESIGN_COOLDOWN;
       if (now < expirationTime) {
         const timeLeft = (expirationTime - now) / 1000;
-        const cooldownMessage = await interaction.reply({ content: `Por favor espera ${timeLeft.toFixed(1)} segundos antes de usar el comando design de nuevo.`, ephemeral: true });
-      
-        // Eliminar el mensaje de cooldown después de que expire
-        setTimeout(() => cooldownMessage.delete().catch(() => {}), timeLeft * 1000);
-        return;
+        return interaction.reply({ content: `Por favor espera ${timeLeft.toFixed(1)} segundos antes de usar el comando design de nuevo.`, ephemeral: true });
       }
     }
 
     userCooldowns.set(userId, now);
     const result = await executeDesign(userId, interaction.options?.getString('lenguaje'));
-  
+    
     const response = { embeds: [result.embed], components: [createNavigationRow('design')] };
-  
+    
     if (interaction.deferred || interaction.replied) {
       await interaction.editReply(response);
     } else {
@@ -70,8 +66,19 @@ module.exports = {
 };
 
 async function executeDesign(userId, selectedLanguage) {
+  console.log('Executing design command for user:', userId);
   const userData = getUserData(userId);
-  const activeLanguages = userData.activeLanguages || getActiveLanguages(userData);
+  console.log('User data:', userData);
+  
+  let activeLanguages = getActiveLanguages(userData);
+  console.log('Active languages:', activeLanguages);
+
+  if (activeLanguages.length === 0) {
+    console.log('No active languages found, setting HTML as default');
+    activeLanguages = ['HTML'];
+    userData.activeLanguages = activeLanguages;
+    saveUserData({ [userId]: userData });
+  }
 
   let totalLinesGenerated = 0;
   let generatedLines = {};
@@ -83,12 +90,15 @@ async function executeDesign(userId, selectedLanguage) {
     totalLinesGenerated += lines;
   }
 
-  userData.totalLinesGenerated += totalLinesGenerated; // Added line
+  console.log('Generated lines:', generatedLines);
+  console.log('Total lines generated:', totalLinesGenerated);
+
+  userData.totalLinesGenerated = (userData.totalLinesGenerated || 0) + totalLinesGenerated;
 
   // Check storage
   const currentStorage = calculateStorageUsed(userData);
   const totalStorage = calculateTotalStorage(userData);
-  if (currentStorage + totalLinesGenerated > totalStorage) {
+  if (Math.floor(currentStorage + totalLinesGenerated) > totalStorage) {
     return {
       embed: new EmbedBuilder()
         .setColor('#FF0000')
@@ -107,7 +117,7 @@ async function executeDesign(userId, selectedLanguage) {
 
   // Calculate and add XP
   const xpGained = calculateXP(userData.level, totalLinesGenerated);
-  userData.xp += xpGained;
+  userData.xp = (userData.xp || 0) + xpGained;
 
   // Check for level up
   let leveledUp = false;
@@ -127,12 +137,12 @@ async function executeDesign(userId, selectedLanguage) {
     }
   }
 
+  console.log('Updated user data before saving:', userData);
   saveUserData({ [userId]: userData });
 
   const embed = new EmbedBuilder()
     .setColor('#00FF00')
     .setTitle('💻 Diseño de Código')
-    //.setDescription(`Has generado código en ${Object.keys(generatedLines).length} lenguaje(s)`)
     .setDescription(`Líneas Generadas: ${formatNumber(totalLinesGenerated)}`)
     .setFooter({ text: `Almacenamiento: ${formatNumber(currentStorage + totalLinesGenerated)}/${formatNumber(totalStorage)} bytes | Líneas de código totales generadas: ${formatNumber(userData.totalLinesGenerated)}` });
 

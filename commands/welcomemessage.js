@@ -25,30 +25,26 @@ module.exports = {
       return message.reply('No tienes permiso para usar este comando.');
     }
 
-    if (args.length < 2) {
+    const fullCommand = args.join(' ');
+    const match = fullCommand.match(/^(say|embed)\s+(#[0-9A-Fa-f]{6})\s+(.+?)\s+(true|false)\s+(.+)$/);
+
+    if (!match) {
       return message.reply('Uso correcto: c!welcomemessage [say/embed] [color] [title] [hora: true/false] [mensaje]');
     }
 
-    const type = args[0].toLowerCase();
-    if (type !== 'say' && type !== 'embed') {
-      return message.reply('El tipo debe ser "say" o "embed".');
-    }
+    const [, type, color, title, showTime, content] = match;
 
     const config = getConfig();
     if (!config[message.guild.id]) config[message.guild.id] = {};
     
-    let welcomeMessage = {
-      type: type,
-      message: args.slice(4).join(' ')
+    config[message.guild.id].welcomeMessage = {
+      type,
+      color,
+      title,
+      showTime: showTime === 'true',
+      content
     };
 
-    if (type === 'embed') {
-      welcomeMessage.color = args[1];
-      welcomeMessage.title = args[2];
-      welcomeMessage.showTime = args[3].toLowerCase() === 'true';
-    }
-
-    config[message.guild.id].welcomeMessage = welcomeMessage;
     saveConfig(config);
 
     message.reply('El mensaje de bienvenida ha sido configurado.');
@@ -66,16 +62,16 @@ module.exports = {
         ))
     .addStringOption(option =>
       option.setName('color')
-        .setDescription('Color del embed (solo para tipo embed)')
-        .setRequired(false))
+        .setDescription('Color del embed (formato hexadecimal)')
+        .setRequired(true))
     .addStringOption(option =>
       option.setName('titulo')
-        .setDescription('Título del embed (solo para tipo embed)')
-        .setRequired(false))
+        .setDescription('Título del mensaje')
+        .setRequired(true))
     .addBooleanOption(option =>
       option.setName('mostrar_hora')
-        .setDescription('Mostrar hora en el footer del embed (solo para tipo embed)')
-        .setRequired(false))
+        .setDescription('Mostrar hora en el footer del embed')
+        .setRequired(true))
     .addStringOption(option =>
       option.setName('mensaje')
         .setDescription('El mensaje de bienvenida')
@@ -89,23 +85,19 @@ module.exports = {
     const color = interaction.options.getString('color');
     const title = interaction.options.getString('titulo');
     const showTime = interaction.options.getBoolean('mostrar_hora');
-    const message = interaction.options.getString('mensaje');
+    const content = interaction.options.getString('mensaje');
 
     const config = getConfig();
     if (!config[interaction.guild.id]) config[interaction.guild.id] = {};
 
-    let welcomeMessage = {
-      type: type,
-      message: message
+    config[interaction.guild.id].welcomeMessage = {
+      type,
+      color,
+      title,
+      showTime,
+      content
     };
 
-    if (type === 'embed') {
-      welcomeMessage.color = color;
-      welcomeMessage.title = title;
-      welcomeMessage.showTime = showTime;
-    }
-
-    config[interaction.guild.id].welcomeMessage = welcomeMessage;
     saveConfig(config);
 
     interaction.reply('El mensaje de bienvenida ha sido configurado.');
