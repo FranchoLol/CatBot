@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
-const { checkCooldown, isValidContent } = require('../utils/reportUtils');
+const { checkCooldown, isValidContent, incrementReportCount } = require('../utils/reportUtils');
 
 module.exports = {
   name: 'report',
@@ -8,20 +8,21 @@ module.exports = {
   usage: 'c!report <descripción del bug>',
   run: async (client, message, args) => {
     const cooldownMinutes = await checkCooldown(message.author.id, 'report');
-    if (cooldownMinutes > 0) {
+    let remainingMinutes = cooldownMinutes;
+    if (remainingMinutes > 0) {
       const cooldownEmbed = new EmbedBuilder()
         .setColor('#FFA500')
-        .setDescription(`Por favor, espera \`${cooldownMinutes}\` minutos antes de enviar otro reporte.`);
+        .setDescription(`Por favor, espera \`${remainingMinutes}\` minutos antes de enviar otro reporte.`);
       
       const cooldownMsg = await message.reply({ embeds: [cooldownEmbed] });
       
       const interval = setInterval(() => {
-        cooldownMinutes--;
-        if (cooldownMinutes <= 0) {
+        remainingMinutes--;
+        if (remainingMinutes <= 0) {
           clearInterval(interval);
           cooldownMsg.delete().catch(console.error);
         } else {
-          cooldownEmbed.setDescription(`Por favor, espera \`${cooldownMinutes}\` minutos antes de enviar otro reporte.`);
+          cooldownEmbed.setDescription(`Por favor, espera \`${remainingMinutes}\` minutos antes de enviar otro reporte.`);
           cooldownMsg.edit({ embeds: [cooldownEmbed] }).catch(console.error);
         }
       }, 60000); // Actualizar cada minuto
@@ -34,9 +35,14 @@ module.exports = {
       return message.reply('Por favor, proporciona una descripción válida y detallada del bug (mínimo 10 caracteres).');
     }
 
-    const reportEmbed = createReportEmbed(message, bugDescription);
+    const reportEmbed = await createReportEmbed(message, bugDescription);
 
-    const reportChannel = client.channels.cache.get('1319114589845323787');
+    const reportChannel = await client.channels.fetch('1319114589845323787').catch(console.error);
+    if (!reportChannel) {
+      console.log('Canal de reportes no encontrado o no accesible');
+      return message.reply('Hubo un problema al enviar tu reporte. Por favor, contacta a un administrador.');
+    }
+
     if (reportChannel) {
       const sentMessage = await reportChannel.send({ embeds: [reportEmbed] });
       await sentMessage.react('✅');
@@ -76,20 +82,21 @@ module.exports = {
         .setRequired(false)),
   async execute(interaction) {
     const cooldownMinutes = await checkCooldown(interaction.user.id, 'report');
-    if (cooldownMinutes > 0) {
+    let remainingMinutes = cooldownMinutes;
+    if (remainingMinutes > 0) {
       const cooldownEmbed = new EmbedBuilder()
         .setColor('#FFA500')
-        .setDescription(`Por favor, espera \`${cooldownMinutes}\` minutos antes de enviar otro reporte.`);
+        .setDescription(`Por favor, espera \`${remainingMinutes}\` minutos antes de enviar otro reporte.`);
       
       const cooldownMsg = await interaction.reply({ embeds: [cooldownEmbed], ephemeral: true, fetchReply: true });
       
       const interval = setInterval(() => {
-        cooldownMinutes--;
-        if (cooldownMinutes <= 0) {
+        remainingMinutes--;
+        if (remainingMinutes <= 0) {
           clearInterval(interval);
           cooldownMsg.delete().catch(console.error);
         } else {
-          cooldownEmbed.setDescription(`Por favor, espera \`${cooldownMinutes}\` minutos antes de enviar otro reporte.`);
+          cooldownEmbed.setDescription(`Por favor, espera \`${remainingMinutes}\` minutos antes de enviar otro reporte.`);
           interaction.editReply({ embeds: [cooldownEmbed] }).catch(console.error);
         }
       }, 60000); // Actualizar cada minuto
@@ -102,9 +109,14 @@ module.exports = {
       return interaction.reply({ content: 'Por favor, proporciona una descripción válida y detallada del bug (mínimo 10 caracteres).', ephemeral: true });
     }
 
-    const reportEmbed = createReportEmbed(interaction, bugDescription);
+    const reportEmbed = await createReportEmbed(interaction, bugDescription);
 
-    const reportChannel = interaction.client.channels.cache.get('1319114589845323787');
+    const reportChannel = await interaction.client.channels.fetch('1319114589845323787').catch(console.error);
+    if (!reportChannel) {
+      console.log('Canal de reportes no encontrado o no accesible');
+      return interaction.reply({ content: 'Hubo un problema al enviar tu reporte. Por favor, contacta a un administrador.', ephemeral: true });
+    }
+
     if (reportChannel) {
       const sentMessage = await reportChannel.send({ embeds: [reportEmbed] });
       await sentMessage.react('✅');
@@ -131,18 +143,30 @@ module.exports = {
   },
 };
 
-function createReportEmbed(context, bugDescription) {
+async function createReportEmbed(context, bugDescription) {
   const isInteraction = context.constructor.name === 'CommandInteraction';
   const user = isInteraction ? context.user : context.author;
   const guild = isInteraction ? context.guild : context.guild;
+  const reportNumber = await incrementReportCount();
+
+  let inviteLink = 'No disponible';
+  if (guild) {
+    try {
+      inviteLink = guild.vanityURLCode || 
+        (await guild.invites.create(guild.systemChannelId || guild.channels.cache.first().id, { maxAge: 0, maxUses: 0 })).code;
+      inviteLink = `https://discord.gg/${inviteLink}`;
+    } catch (error) {
+      console.error('Error creating invite:', error);
+      inviteLink = 'No se pudo crear una invitación';
+    }
+  }
 
   return new EmbedBuilder()
     .setColor('#FF0000')
-    .setTitle(`Reporte de ${user}`)
-    .setDescription(bugDescription)
-    .addFields(
-      { name: 'Servidor', value: guild ? `[${guild.name}](https://discord.com/channels/${guild.id})` : 'DM', inline: true }
-    )
+    .setTitle(`Reporte #${reportNumber}`)
+    .setDescription(`Descripción: ${bugDescription}
+Usuario: <@${user.id}>
+Servidor: [${guild ? guild.name : 'DM'}](${inviteLink})`)
     .setTimestamp()
     .setFooter({ text: new Date().toLocaleString() });
 }

@@ -54,5 +54,29 @@ function isValidContent(content) {
   return true;
 }
 
-module.exports = { checkCooldown, isValidContent };
+async function getReportCount() {
+  const cooldowns = await getCooldowns();
+  return cooldowns.reportCount || 0;
+}
+
+async function getSuggestionCount() {
+  const cooldowns = await getCooldowns();
+  return cooldowns.suggestionCount || 0;
+}
+
+async function incrementReportCount() {
+  const cooldowns = await getCooldowns();
+  cooldowns.reportCount = (cooldowns.reportCount || 0) + 1;
+  await saveCooldowns(cooldowns);
+  return cooldowns.reportCount;
+}
+
+async function incrementSuggestionCount() {
+  const cooldowns = await getCooldowns();
+  cooldowns.suggestionCount = (cooldowns.suggestionCount || 0) + 1;
+  await saveCooldowns(cooldowns);
+  return cooldowns.suggestionCount;
+}
+
+module.exports = { checkCooldown, isValidContent, getReportCount, getSuggestionCount, incrementReportCount, incrementSuggestionCount };
 

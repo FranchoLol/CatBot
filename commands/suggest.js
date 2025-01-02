@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
-const { checkCooldown, isValidContent } = require('../utils/reportUtils');
+const { checkCooldown, isValidContent, incrementSuggestionCount } = require('../utils/reportUtils');
 
 module.exports = {
   name: 'suggest',
@@ -8,20 +8,21 @@ module.exports = {
   usage: 'c!suggest <descripción de la sugerencia>',
   run: async (client, message, args) => {
     const cooldownMinutes = await checkCooldown(message.author.id, 'suggest');
-    if (cooldownMinutes > 0) {
+    let remainingMinutes = cooldownMinutes;
+    if (remainingMinutes > 0) {
       const cooldownEmbed = new EmbedBuilder()
         .setColor('#FFA500')
-        .setDescription(`Por favor, espera \`${cooldownMinutes}\` minutos antes de enviar otra sugerencia.`);
+        .setDescription(`Por favor, espera \`${remainingMinutes}\` minutos antes de enviar otra sugerencia.`);
       
       const cooldownMsg = await message.reply({ embeds: [cooldownEmbed] });
       
       const interval = setInterval(() => {
-        cooldownMinutes--;
-        if (cooldownMinutes <= 0) {
+        remainingMinutes--;
+        if (remainingMinutes <= 0) {
           clearInterval(interval);
           cooldownMsg.delete().catch(console.error);
         } else {
-          cooldownEmbed.setDescription(`Por favor, espera \`${cooldownMinutes}\` minutos antes de enviar otra sugerencia.`);
+          cooldownEmbed.setDescription(`Por favor, espera \`${remainingMinutes}\` minutos antes de enviar otra sugerencia.`);
           cooldownMsg.edit({ embeds: [cooldownEmbed] }).catch(console.error);
         }
       }, 60000); // Actualizar cada minuto
@@ -34,9 +35,14 @@ module.exports = {
       return message.reply('Por favor, proporciona una descripción válida y detallada de tu sugerencia (mínimo 10 caracteres).');
     }
 
-    const suggestionEmbed = createSuggestionEmbed(message, suggestion);
+    const suggestionEmbed = await createSuggestionEmbed(message, suggestion);
 
-    const suggestionChannel = client.channels.cache.get('1319114611424890951');
+    const suggestionChannel = await client.channels.fetch('1319114611424890951').catch(console.error);
+    if (!suggestionChannel) {
+      console.log('Canal de sugerencias no encontrado o no accesible');
+      return message.reply('Hubo un problema al enviar tu sugerencia. Por favor, contacta a un administrador.');
+    }
+
     if (suggestionChannel) {
       const sentMessage = await suggestionChannel.send({ embeds: [suggestionEmbed] });
       //await sentMessage.react('✅'); //Removed reaction
@@ -76,21 +82,22 @@ module.exports = {
         .setRequired(false)),
   async execute(interaction) {
     const cooldownMinutes = await checkCooldown(interaction.user.id, 'suggest');
-    if (cooldownMinutes > 0) {
+    let remainingMinutes = cooldownMinutes;
+    if (remainingMinutes > 0) {
       const cooldownEmbed = new EmbedBuilder()
         .setColor('#FFA500')
-        .setDescription(`Por favor, espera \`${cooldownMinutes}\` minutos antes de enviar otra sugerencia.`);
+        .setDescription(`Por favor, espera \`${remainingMinutes}\` minutos antes de enviar otra sugerencia.`);
       
       const cooldownMsg = await interaction.reply({ embeds: [cooldownEmbed], ephemeral: true, fetchReply: true });
       
       const interval = setInterval(() => {
-        cooldownMinutes--;
-        if (cooldownMinutes <= 0) {
+        remainingMinutes--;
+        if (remainingMinutes <= 0) {
           clearInterval(interval);
           cooldownMsg.delete().catch(console.error);
         } else {
-          cooldownEmbed.setDescription(`Por favor, espera \`${cooldownMinutes}\` minutos antes de enviar otra sugerencia.`);
-          interaction.editReply({ embeds: [cooldownEmbed] }).catch(console.error);
+          cooldownEmbed.setDescription(`Por favor, espera \`${remainingMinutes}\` minutos antes de enviar otra sugerencia.`);
+          cooldownMsg.edit({ embeds: [cooldownEmbed] }).catch(console.error);
         }
       }, 60000); // Actualizar cada minuto
       
@@ -102,9 +109,14 @@ module.exports = {
       return interaction.reply({ content: 'Por favor, proporciona una descripción válida y detallada de tu sugerencia (mínimo 10 caracteres).', ephemeral: true });
     }
 
-    const suggestionEmbed = createSuggestionEmbed(interaction, suggestion);
+    const suggestionEmbed = await createSuggestionEmbed(interaction, suggestion);
 
-    const suggestionChannel = interaction.client.channels.cache.get('1319114611424890951');
+    const suggestionChannel = await interaction.client.channels.fetch('1319114611424890951').catch(console.error);
+    if (!suggestionChannel) {
+      console.log('Canal de sugerencias no encontrado o no accesible');
+      return interaction.reply({ content: 'Hubo un problema al enviar tu sugerencia. Por favor, contacta a un administrador.', ephemeral: true});
+    }
+
     if (suggestionChannel) {
       const sentMessage = await suggestionChannel.send({ embeds: [suggestionEmbed] });
       //await sentMessage.react('✅'); //Removed reaction
@@ -131,18 +143,30 @@ module.exports = {
   },
 };
 
-function createSuggestionEmbed(context, suggestion) {
+async function createSuggestionEmbed(context, suggestion) {
   const isInteraction = context.constructor.name === 'CommandInteraction';
   const user = isInteraction ? context.user : context.author;
   const guild = isInteraction ? context.guild : context.guild;
+  const suggestionNumber = await incrementSuggestionCount();
+
+  let inviteLink = 'No disponible';
+  if (guild) {
+    try {
+      inviteLink = guild.vanityURLCode || 
+        (await guild.invites.create(guild.systemChannelId || guild.channels.cache.first().id, { maxAge: 0, maxUses: 0 })).code;
+      inviteLink = `https://discord.gg/${inviteLink}`;
+    } catch (error) {
+      console.error('Error creating invite:', error);
+      inviteLink = 'No se pudo crear una invitación';
+    }
+  }
 
   return new EmbedBuilder()
     .setColor('#00FF00')
-    .setTitle(`Sugerencia de ${user}`)
-    .setDescription(suggestion)
-    .addFields(
-      { name: 'Servidor', value: guild ? `[${guild.name}](https://discord.com/channels/${guild.id})` : 'DM', inline: true }
-    )
+    .setTitle(`Sugerencia #${suggestionNumber}`)
+    .setDescription(`Descripción: ${suggestion}
+Usuario: <@${user.id}>
+Servidor: [${guild ? guild.name : 'DM'}](${inviteLink})`)
     .setTimestamp()
     .setFooter({ text: new Date().toLocaleString() });
 }
