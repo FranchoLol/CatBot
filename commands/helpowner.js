@@ -5,6 +5,7 @@ const ownerCommands = [
   { name: 'totalashemojis', description: 'Muestra una lista de todos los emojis en todos los servidores' },
   { name: 'totalashgif', description: 'Muestra una lista de todos los GIFs en todos los servidores' },
   { name: 'servers', description: 'Lista los servidores en los que está el bot con la fecha de unión y antigüedad' },
+  { name: 'getallemojis', description: 'Descarga todos los emojis y gif de todos los servidores presentes.' }
 ];
 
 module.exports = {

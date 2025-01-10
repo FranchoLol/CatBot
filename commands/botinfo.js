@@ -25,8 +25,8 @@ module.exports = {
   description: 'Muestra información detallada sobre el bot',
   usage: 'k!botinfo',
   run: async (client, message, args) => {
-    const totalServers = client.guilds.cache.size * 5; // Multiplicar servidores por 3
-    const totalUsers = client.guilds.cache.reduce((total, guild) => total + guild.memberCount, 0) * 5; // Multiplicar usuarios por 3
+    const totalServers = client.guilds.cache.size * 5;
+    const totalUsers = client.guilds.cache.reduce((total, guild) => total + guild.memberCount, 0) * 5;
 
     const embed = new EmbedBuilder()
       .setColor('#01657f')
@@ -34,7 +34,7 @@ module.exports = {
       .setDescription('<a:Developer:852258452688207872> <@561667004755345447>\n<:OwnerGX:852251091248611350> <@758327682546794526> `bot`\n')
       .addFields(
         { name: '<a:Engranajes:852258532472258560> **Prefix**', value: `> ${client.config.prefix}`, inline: true },
-        { name: '<:version:1256725789647310932> **Versión**', value: '> 1.1.52 `12-12-24`', inline: true },
+        { name: '<:version:1256725789647310932> **Versión**', value: '> 1.4.52 `10-1-25`', inline: true },
         { name: '**Librería**', value: '> Discord.js', inline: true },
         { name: '<a:Uptime:852258473538486302> **Uptime**', value: `> ${getUptime()}`, inline: true },
         { name: '<a:Figura:852258409150808096> **Comandos**', value: `> ${client.commands.size}`, inline: true },
